@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="Part1">
+    <static>true</static>
+    <link name="part1_link">
+
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>model://part1/meshes/part1.dae</uri>
+            <scale>1.1 1.1 1.4</scale>
+          </mesh>
+        </geometry>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://part1/meshes/part1.dae</uri>
+            <scale>1.1 1.1 1.4</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/White</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

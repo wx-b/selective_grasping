@@ -1,0 +1,3 @@
+<launch>
+  <node name="pcl_sim" pkg="ssggcnn_ur5_grasping" type="main" output="screen"/>
+</launch>

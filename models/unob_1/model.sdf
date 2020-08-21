@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="unob_1">
+    <static>true</static>
+    <link name="unob_1_link">
+
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>model://unob_1/meshes/unob_1.dae</uri>
+            <scale>0.4 0.4 2.2</scale>
+          </mesh>
+        </geometry>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://unob_1/meshes/unob_1.dae</uri>
+            <scale>0.4 0.4 2.2</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Blue</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
