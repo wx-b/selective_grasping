@@ -44,12 +44,42 @@ class spawn_objects():
 if __name__ == '__main__':
 	spawn_obj = spawn_objects()
 
-	vase_path = '/models/mahler_obj/vase/model.sdf'
-	ptFinal = [-0.05, -0.5, 0.019762] # all together in the bin
+	object_path = '/models/mahler_obj/vase/model.sdf'
+	ptFinal = [-0.05, -0.5, 0.019762]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
-	spawn_obj.spawning('vase', vase_path, ptFinal, oriFinal)
+	spawn_obj.spawning('vase', object_path, ptFinal, oriFinal)
 
-	part_1_path = '/models/mahler_obj/part_1/model.sdf'
-	ptFinal = [-0.05, -0.4, -0.0046] # all together in the bin
+	object_path = '/models/mahler_obj/part_1/model.sdf'
+	ptFinal = [-0.05, -0.4, -0.0046]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
-	spawn_obj.spawning('part_1', part_1_path, ptFinal, oriFinal) # 1,015 - 1,034762
+	spawn_obj.spawning('part_1', object_path, ptFinal, oriFinal)
+
+	object_path = '/models/mahler_obj/bar_clamp/model.sdf'
+	ptFinal = [-0.05, -0.6, -0.004335]
+	oriFinal = quaternion_from_euler(-0.024091, 0.0, 0.0)
+	spawn_obj.spawning('bar_clamp', object_path, ptFinal, oriFinal)
+
+	object_path = '/models/mahler_obj/gear_box/model.sdf'
+	ptFinal = [-0.15, -0.4, -0.005056]
+	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	spawn_obj.spawning('gear_box', object_path, ptFinal, oriFinal)
+
+	object_path = '/models/mahler_obj/nozzle/model.sdf'
+	ptFinal = [-0.15, -0.5, 0.0]
+	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	spawn_obj.spawning('nozzle', object_path, ptFinal, oriFinal)
+
+	object_path = '/models/mahler_obj/part_3/model.sdf'
+	ptFinal = [-0.15, -0.6, 0.0]
+	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	spawn_obj.spawning('part_3', object_path, ptFinal, oriFinal)
+
+	object_path = '/models/mahler_obj/pawn/model.sdf'
+	ptFinal = [0.05, -0.4, 0.0]
+	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	spawn_obj.spawning('pawn', object_path, ptFinal, oriFinal)
+
+	object_path = '/models/mahler_obj/turbine_housing/model.sdf'
+	ptFinal = [0.05, -0.5, 0.0]
+	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	spawn_obj.spawning('turbine_housing', object_path, ptFinal, oriFinal)

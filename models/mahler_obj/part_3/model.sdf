@@ -1,0 +1,42 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="part_3">
+    <static>true</static>
+    <link name="part_3_link">
+      <self_collide>true</self_collide>
+
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>model://mahler_obj/part_3/meshes/part_3.dae</uri>
+            <scale>0.6 0.6 0.6</scale>
+          </mesh>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.6</mu>
+              <mu2>0.6</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://mahler_obj/part_3/meshes/part_3.dae</uri>
+            <scale>0.6 0.6 0.6</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Blue</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+
+  </model>
+</sdf>
