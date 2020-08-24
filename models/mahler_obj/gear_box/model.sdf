@@ -5,7 +5,7 @@
     <link name="gear_box_link">
       <self_collide>true</self_collide>
 
-      <collision name="collision">
+      <!-- <collision name="collision">
         <geometry>
           <mesh>
             <uri>model://mahler_obj/gear_box/meshes/gear_box.dae</uri>
@@ -20,7 +20,7 @@
             </ode>
           </friction>
         </surface>
-      </collision>
+      </collision> -->
 
       <visual name="visual">
         <geometry>

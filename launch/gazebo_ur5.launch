@@ -48,6 +48,8 @@
     <rosparam file="$(find ssggcnn_ur5_grasping)/config/ggcnn_param.yaml" />
   </group>
 
+  <!-- Parameters for object detection -->
+  <rosparam file="$(find ssggcnn_ur5_grasping)/config/obj_detection.yaml" command="load" />
 
   ########################################
   # Load Gripper Controllers

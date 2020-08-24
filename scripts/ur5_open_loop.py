@@ -57,7 +57,7 @@ class vel_control(object):
 		self.client.wait_for_server()
 		print "Connected to server (pos_based_pos_traj_controller)"
 		
-		# Gazebo topics
+		# Gazebo related
 		if self.args.gazebo:
 			# For picking
 			self.pub_model_position = rospy.Publisher('/gazebo/set_link_state', LinkState, queue_size=1)
@@ -95,10 +95,10 @@ class vel_control(object):
 		if self.args.gazebo:
 			self.offset_x = 0.0
 			self.offset_y = 0.0
-			self.offset_z = 0.020 #0.019
+			self.offset_z = 0.020 # 0.019
 		else:
 			self.offset_x = -0.03 # 0.002
-			self.offset_y = 0.02 # -0.05
+			self.offset_y = 0.02  # -0.05
 			self.offset_z = 0.058 # 0.013
 
 		self.ur5_joint_names = rospy.get_param("/ur5_joint_names")
@@ -225,20 +225,20 @@ class vel_control(object):
 		global PICKING
 
 		if PICKING:
-			angle = quaternion_from_euler(1.57, 0.0, 0.0)
+			# angle = quaternion_from_euler(1.57, 0.0, 0.0)
 			object_picking = LinkState()
 			object_picking.link_name = self.string
 			object_picking.pose = Pose(self.model_pose_picking.position, self.model_pose_picking.orientation)
 			object_picking.reference_frame = "wrist_3_link"
 			self.pub_model_position.publish(object_picking)            
 
-	def get_ik(self, pose):
+	def get_ik(self, position):
 		"""Get the inverse kinematics 
 		
-		Get the inverse kinematics of the UR5 robot using track_IK package giving a desired intial pose
+		Get the inverse kinematics of the UR5 robot using track_IK package giving a desired intial position
 		
 		Arguments:
-			pose {list} -- A pose representing x, y and z
+			position {list} -- A position representing x, y and z
 
 		Returns:
 			sol {list} -- Joint angles or None if track_ik is not able to find a valid solution
@@ -251,7 +251,7 @@ class vel_control(object):
 		# ('shoulder_link', 'upper_arm_link', 'forearm_link', 'wrist_1_link', 'wrist_2_link', 'wrist_3_link', 'grasping_link')            
 		ik_solver = IK("base_link", "grasping_link", solve_type="Distance")
 		sol = ik_solver.get_ik([0.2201039360819781, -1.573845095552878, -1.521853400505349, -1.6151347051274518, 1.5704492904506875, 0.0], 
-				pose[0], pose[1], pose[2], q[0], q[1], q[2], q[3])
+				position[0], position[1], position[2], q[0], q[1], q[2], q[3])
 		if sol is not None:
 			sol = list(sol)
 			sol[-1] = 0.0

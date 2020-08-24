@@ -1,0 +1,16 @@
+classes: {
+    "bar_clamp": 0,
+    "gear_box": 1,
+    "vase": 2,
+    "part_1": 3,
+    "part_3": 4,
+    "nozzle": 5,
+    "pawn": 6,
+    "turbine_housing": 7
+  }
+
+model_names:
+  - ssd_512_resnet50_v1_voc:
+    - network: 'ssd'
+    - width: 512
+    - height: 512

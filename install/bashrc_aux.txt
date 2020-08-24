@@ -1,0 +1,22 @@
+These are just optional commands to add to bashrc and use if necessary
+
+alias conda_act='conda activate gluoncv & PYTHONPATH=/home/caio/anaconda3/envs/gluoncv/bin/python'
+alias gazebo1='roslaunch ssggcnn_ur5_grasping gazebo_ur5.launch'
+alias gazebo2='rosrun ssggcnn_ur5_grasping ur5_open_loop.py' 
+alias gazebo3='rosrun ssggcnn_ur5_grasping run_ggcnn.py' 
+alias gazebo4='rosrun ssggcnn_ur5_grasping spawn_objects.py' 
+
+alias ufba_real_ros='roslaunch ur_modern_driver ur5_ros_control.launch robot_ip:=192.168.131.12'
+
+alias set_performance='echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor'
+alias opt1='rosrun ssggcnn_ur5_grasping change_gazebo_properties.py' 
+
+conda install -c conda-forge opencv
+
+export PATH="/usr/local/cuda-10.0/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/cuda-10.0/lib64:$LD_LIBRARY_PATH"
+
+conda_act(){
+	conda activate gluoncv
+	PYTHONPATH=/home/caio/anaconda3/envs/gluoncv/bin/python
+}

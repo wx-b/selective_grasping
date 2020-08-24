@@ -5,7 +5,7 @@
     <link name="bar_clamp_link">
       <self_collide>true</self_collide>
 
-      <collision name="collision">
+      <!-- <collision name="collision">
         <geometry>
           <mesh>
             <uri>model://mahler_obj/bar_clamp/meshes/bar_clamp.dae</uri>
@@ -20,7 +20,7 @@
             </ode>
           </friction>
         </surface>
-      </collision>
+      </collision> -->
 
       <visual name="visual">
         <geometry>

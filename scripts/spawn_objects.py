@@ -44,15 +44,15 @@ class spawn_objects():
 if __name__ == '__main__':
 	spawn_obj = spawn_objects()
 
-	object_path = '/models/mahler_obj/vase/model.sdf'
-	ptFinal = [-0.05, -0.5, 0.019762]
-	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
-	spawn_obj.spawning('vase', object_path, ptFinal, oriFinal)
+	# object_path = '/models/mahler_obj/vase/model.sdf'
+	# ptFinal = [-0.05, -0.5, 0.019762]
+	# oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	# spawn_obj.spawning('vase', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/mahler_obj/part_1/model.sdf'
-	ptFinal = [-0.05, -0.4, -0.0046]
-	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
-	spawn_obj.spawning('part_1', object_path, ptFinal, oriFinal)
+	# object_path = '/models/mahler_obj/part_1/model.sdf'
+	# ptFinal = [-0.05, -0.4, -0.0046]
+	# oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	# spawn_obj.spawning('part_1', object_path, ptFinal, oriFinal)
 
 	object_path = '/models/mahler_obj/bar_clamp/model.sdf'
 	ptFinal = [-0.05, -0.6, -0.004335]
@@ -69,17 +69,17 @@ if __name__ == '__main__':
 	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
 	spawn_obj.spawning('nozzle', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/mahler_obj/part_3/model.sdf'
-	ptFinal = [-0.15, -0.6, 0.0]
-	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
-	spawn_obj.spawning('part_3', object_path, ptFinal, oriFinal)
+	# object_path = '/models/mahler_obj/part_3/model.sdf'
+	# ptFinal = [-0.15, -0.6, 0.0]
+	# oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	# spawn_obj.spawning('part_3', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/mahler_obj/pawn/model.sdf'
-	ptFinal = [0.05, -0.4, 0.0]
-	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
-	spawn_obj.spawning('pawn', object_path, ptFinal, oriFinal)
+	# object_path = '/models/mahler_obj/pawn/model.sdf'
+	# ptFinal = [0.05, -0.4, 0.0]
+	# oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	# spawn_obj.spawning('pawn', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/mahler_obj/turbine_housing/model.sdf'
-	ptFinal = [0.05, -0.5, 0.0]
-	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
-	spawn_obj.spawning('turbine_housing', object_path, ptFinal, oriFinal)
+	# object_path = '/models/mahler_obj/turbine_housing/model.sdf'
+	# ptFinal = [0.05, -0.5, 0.0]
+	# oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	# spawn_obj.spawning('turbine_housing', object_path, ptFinal, oriFinal)
