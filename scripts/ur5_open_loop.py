@@ -36,6 +36,7 @@ PICKING = False # Tells the node that the object must follow the gripper
 def parse_args():
 	parser = argparse.ArgumentParser(description='AAPF_Orientation')
 	parser.add_argument('--gazebo', action='store_true', help='Set the parameters related to the simulated enviroonment in Gazebo')
+	parser.add_argument('--ggcnn', action='store_true', help='run only the ggcnn')
 	args = parser.parse_args()
 	return args
 
@@ -462,10 +463,11 @@ def main():
 	rospy.on_shutdown(ur5_vel.move_home_on_shutdown)
 	ur5_vel.traj_planner(point_init_home, movement='fast')
 
-	# Remove all objects from the scene and press enter
-	raw_input("==== Press enter to move the robot to the 'depth cam shot' position!")
 	point_init = [-0.37, 0.11, 0.05]
-	ur5_vel.traj_planner(point_init, movement='fast')
+	if not arg.ggcnn:
+		# Remove all objects from the scene and press enter
+		raw_input("==== Press enter to move the robot to the 'depth cam shot' position!")
+		ur5_vel.traj_planner(point_init, movement='fast')
 		
 	if arg.gazebo:
 		rospy.loginfo("Starting the gripper in Gazebo! Please wait...")

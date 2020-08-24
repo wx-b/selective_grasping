@@ -13,11 +13,10 @@
           <geom>robotiq_85_right_finger_tip_link_geom</geom>
           <selfCollide>true</selfCollide>
           <alwaysOn>true</alwaysOn>
-          <updateRate>15.0</updateRate>
+          <updateRate>20.0</updateRate>
           <material>Gazebo/Red</material>
           <contact>
-            <!-- The name within the <collision> element must be of the form <link name>_collision -->
-             <collision>robotiq_85_right_finger_tip_link_collision</collision>
+            <collision>robotiq_85_right_finger_tip_link_collision</collision>
           </contact>
           <plugin name="gazebo_ros_bumper_controller" filename="libgazebo_ros_bumper.so">   
               <bumperTopicName>right_finger_bumper_vals</bumperTopicName>
@@ -31,11 +30,10 @@
           <geom>robotiq_85_left_finger_tip_link_geom</geom>
           <selfCollide>true</selfCollide>
           <alwaysOn>true</alwaysOn>
-          <updateRate>15.0</updateRate>
+          <updateRate>20.0</updateRate>
           <material>Gazebo/Red</material>
           <contact>
-            <!-- The name within the <collision> element must be of the form <link name>_collision -->
-             <collision>robotiq_85_left_finger_tip_link_collision</collision>
+            <collision>robotiq_85_left_finger_tip_link_collision</collision>
           </contact>
           <plugin name="gazebo_ros_bumper_controller" filename="libgazebo_ros_bumper.so">   
               <bumperTopicName>left_finger_bumper_vals</bumperTopicName>
@@ -43,86 +41,4 @@
           </plugin>
       </sensor>
   </gazebo>
-
-  <!-- <gazebo reference="robotiq_85_left_inner_knuckle_link">
-    <material>Gazebo/Black</material>
-    <turnGravityOff>true</turnGravityOff>
-    <implicitSpringDamper>1</implicitSpringDamper>
-    <kp>100000.0</kp>
-    <kd>1.0</kd>
-    <mu1>10.0</mu1>
-    <mu2>0.1</mu2>
-    <fdir1>0 0 1</fdir1>
-    <minDepth>0.01</minDepth>
-  </gazebo>
-
-  <gazebo reference="robotiq_85_left_finger_tip_link">
-    <material>Gazebo/Black</material>
-    <turnGravityOff>true</turnGravityOff>
-    <implicitSpringDamper>1</implicitSpringDamper>
-    <kp>100000.0</kp>
-    <kd>1.0</kd>
-    <mu1>10.0</mu1>
-    <mu2>0.1</mu2>
-    <fdir1>0 0 1</fdir1>
-    <minDepth>0.01</minDepth>
-  </gazebo>
-
-  <gazebo reference="robotiq_85_left_knuckle_link">
-    <material>Gazebo/Black</material>
-    <turnGravityOff>true</turnGravityOff>
-    <implicitSpringDamper>1</implicitSpringDamper>
-    <kp>100000.0</kp>
-    <kd>1.0</kd>
-    <mu1>10.0</mu1>
-    <mu2>0.1</mu2>
-    <fdir1>0 0 1</fdir1>
-    <minDepth>0.01</minDepth>
-  </gazebo>
-
-  <gazebo reference="robotiq_85_right_inner_knuckle_link">
-    <material>Gazebo/Black</material>
-    <turnGravityOff>true</turnGravityOff>
-    <implicitSpringDamper>1</implicitSpringDamper>
-    <kp>100000.0</kp>
-    <kd>1.0</kd>
-    <mu1>10.0</mu1>
-    <mu2>0.1</mu2>
-    <fdir1>0 0 1</fdir1>
-    <minDepth>0.01</minDepth>
-  </gazebo>
-
-  <gazebo reference="robotiq_85_right_finger_tip_link">
-    <material>Gazebo/Black</material>
-    <turnGravityOff>true</turnGravityOff>
-    <implicitSpringDamper>1</implicitSpringDamper>
-    <kp>100000.0</kp>
-    <kd>1.0</kd>
-    <mu1>10.0</mu1>
-    <mu2>0.1</mu2>
-    <fdir1>0 0 1</fdir1>
-    <minDepth>0.01</minDepth>
-  </gazebo>
-
-  <gazebo reference="robotiq_85_right_knuckle_link">
-    <material>Gazebo/Black</material>
-    <turnGravityOff>true</turnGravityOff>
-    <implicitSpringDamper>1</implicitSpringDamper>
-    <kp>100000.0</kp>
-    <kd>1.0</kd>
-    <mu1>10.0</mu1>
-    <mu2>0.1</mu2>
-    <fdir1>0 0 1</fdir1>
-    <minDepth>0.01</minDepth>
-  </gazebo> -->
-
-  <!-- <gazebo reference="box_link">
-    <implicitSpringDamper>1</implicitSpringDamper>
-    <kp>100000.0</kp>
-    <kd>1.0</kd>
-    <mu1>10.0</mu1>
-    <mu2>0.1</mu2>
-    <fdir1>1 0 0</fdir1>
-    <minDepth>0.01</minDepth>
-  </gazebo> -->
 </robot>

@@ -90,10 +90,6 @@
       </actuator>
     </transmission>
 
-
-
-    <!-- ROBOTIQ TRANSMISSION -->
-
   </xacro:macro>
 
 </robot>
