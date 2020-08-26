@@ -1,11 +1,11 @@
 
 ------------
-
-<a id="top"></a>
 ## Contents
+<a id="top"></a>
 1. [Authors](#1.0)
-2. [Required packages - Kinetic Version](#3.0)
-3. [Run GGCNN in Gazebo and RVIZ](#4.0)
+2. [Required packages - Kinetic Version](#2.0)
+3. [Easy install](#3.0)
+4. [Run GGCNN in Gazebo and RVIZ](#4.0)
 
 ------------
 <a name="1.0"></a>
@@ -20,6 +20,7 @@
 
 **PPGM - Programa de Pós-Graduação em Mecatrônica, Universidade Federal da Bahia, Salvador, Brasil.
 
+------------
 <a name="2.0"></a>
 ## 2.0 - Required packages - Kinetic Version
 
@@ -41,8 +42,9 @@ This code was developed with Python 2.7 on Ubuntu 16.04 with ROS Kinetic.
 
 > **_NOTE:_**  This package should be placed into your src folder. Please open an issue if you find any problem related to this package.
 
-
-### Easy install
+------------
+<a name="3.0"></a>
+## 3.0 - Easy install
 
 In order to install all the required packages easily, create a new catkin workspace
 ```bash
@@ -60,57 +62,57 @@ Run the install.sh file
 cd ~/catkin_ws_new/src/ssggcnn_ur5_grasping/install
 ./install.sh
 ```
-
-<a name="3.0"></a>
-## 3.0 - Run SSGG-CNN in Gazebo
+------------
+<a name="4.0"></a>
+## 4.0 - Run SSGG-CNN in Gazebo
 Please follow each following steps:
 
-### 3.1 - Launch Gazebo:
+### 4.1 - Launch Gazebo:
 ```bash
 roslaunch ssggcnn_ur5_grasping gazebo_ur5.launch
 ```
 
-### 3.2 - Run the UR5 control node 
-Press enter after the following message appears and jump to the step 3.3:
+### 4.2 - Run the UR5 control node 
+Press enter after the following message appears and jump to the step 4.3:
 "==== Press enter to move the robot to the 'depth cam shot' position!"
 ```bash
 rosrun ssggcnn_ur5_grasping ur5_open_loop.py --gazebo
 ```
 
-### 3.3 - Run the SSD node
+### 4.3 - Run the SSD node
 ```bash
 rosrun ssggcnn_ur5_grasping main.py
 ```
 
-### 3.4 - Run the GG-CNN node
-Press enter after the following message appears and jump to the step 3.5:
+### 4.4 - Run the GG-CNN node
+Press enter after the following message appears and jump to the step 4.5:
 "Press enter to start the GGCNN"
 ```bash
 rosrun ssggcnn_ur5_grasping run_ggcnn.py --ssggcnn
 ```
 
-### 3.5 - Spawn the objects in the workspace
+### 4.5 - Spawn the objects in the workspace
 ```bash
 rosrun ssggcnn_ur5_grasping spawn_objects.py
 ```
 
-### 3.6 - UR5 control node
+### 4.6 - UR5 control node
 After running the GG-CNN node you are able to move the robot and perform the grasp.
 Press enter to complete each related task specified in ur5_open_loop.py
 
-### 3.7 - Change the Gazebo properties (OPTIONAL)
+### 4.7 - Change the Gazebo properties (OPTIONAL)
 It will speed up your Gazebo simulation a little bit :)
 ```bash
 rosrun ssggcnn_ur5_grasping change_gazebo_properties.py
 ```
 
-### 3.8 - Visualize the images published by the GG-CNN
+### 4.8 - Visualize the images published by the GG-CNN
 You might want to see the grasp or any other image. In order to do that, you can use the rqt_image_view.
 ```bash
 rosrun rqt_image_view
 ```
 
-### 3.9 - Visualize depth cloud in RVIZ
+### 4.9 - Visualize depth cloud in RVIZ
 If you want to visualize the data being published by the Intel Realsense D435 please run the following node:
 ```bash
 rosrun ssggcnn_ur5_grasping rviz_ur5.launch
