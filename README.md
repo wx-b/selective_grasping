@@ -10,6 +10,7 @@
 ------------
 <a name="1.0"></a>
 ## 1.0 - Authors
+[Back to the top](#top)
 
 - M.Sc. Caio Viturino* - [[Lattes](http://lattes.cnpq.br/4355017524299952)] [[Linkedin](https://www.linkedin.com/in/engcaiobarros/)] - engcaiobarros@gmail.com
 - M.Sc. Kleber de Lima Santana Filho** - [[Lattes](http://lattes.cnpq.br/3942046874020315)] [[Linkedin](https://www.linkedin.com/in/engkleberfilho/)] - engkleberf@gmail.com
@@ -23,6 +24,7 @@
 ------------
 <a name="2.0"></a>
 ## 2.0 - Required packages - Kinetic Version
+[Back to the top](#top)
 
 This code was developed with Python 2.7 on Ubuntu 16.04 with ROS Kinetic.
 
@@ -45,6 +47,7 @@ This code was developed with Python 2.7 on Ubuntu 16.04 with ROS Kinetic.
 ------------
 <a name="3.0"></a>
 ## 3.0 - Easy install
+[Back to the top](#top)
 
 In order to install all the required packages easily, create a new catkin workspace
 ```bash
@@ -65,6 +68,8 @@ cd ~/catkin_ws_new/src/ssggcnn_ur5_grasping/install
 ------------
 <a name="4.0"></a>
 ## 4.0 - Run SSGG-CNN in Gazebo
+[Back to the top](#top)
+
 Please follow each following steps:
 
 ### 4.1 - Launch Gazebo:
