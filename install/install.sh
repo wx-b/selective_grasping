@@ -22,8 +22,9 @@ pip install pathlib
 
 echo '###### Installing additional Deep L. packages etc ######'
 pip install mxnet-cu100 # please install the mxnet for your cuda version
-pip install gluoncv
+pip install gluoncv==0.6.0
 pip install opencv-python
+pip install git+https://github.com/WoLpH/portalocker.git@v1.7.1
 pip install keras==2.1.5
 pip install Keras-Applications==1.0.8 
 pip install Keras-Preprocessing==1.1.0 

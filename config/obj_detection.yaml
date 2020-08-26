@@ -1,16 +1,11 @@
-classes: {
-    "bar_clamp": 0,
-    "gear_box": 1,
-    "vase": 2,
-    "part_1": 3,
-    "part_3": 4,
-    "nozzle": 5,
-    "pawn": 6,
-    "turbine_housing": 7
-  }
+classes: ["bar_clamp", "gear_box", "vase", "part_1", "part_3", "nozzle", "pawn", "turbine_housing"]
 
 model_names:
-  - ssd_512_resnet50_v1_voc:
-    - network: 'ssd'
-    - width: 512
-    - height: 512
+  ssd_512_resnet50_v1_voc:
+    network: 'ssd'
+    width: 512
+    height: 512
+  ssd_300_vgg16_atrous_voc:
+    network: 'ssd'
+    width: 300
+    height: 300

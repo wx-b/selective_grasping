@@ -7,8 +7,6 @@ import time
 from geometry_msgs.msg import *
 from gazebo_msgs.msg import ModelState, ModelStates
 import os
-from os.path import expanduser
-from pathlib import Path
 from tf import TransformListener
 from tf.transformations import quaternion_from_euler
 
