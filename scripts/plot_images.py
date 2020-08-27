@@ -126,6 +126,9 @@ class plot_images(object):
 
 			depth_image = depth_image.astype('uint8')
 			color_img_gray = color_img_gray.astype('uint8')
+
+			# Plot the crop sizea are of the depth image used in the GG-CNN
+			depth_image = cv2.rectangle(depth_image, (190, 0), (480, 300), (0, 0, 255), 3)
 			
 			added_image = cv2.addWeighted(color_img_gray, 0.5, depth_image, 1.0, 0)
 

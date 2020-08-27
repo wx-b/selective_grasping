@@ -130,7 +130,7 @@ class Detector(object):
 		frame_tensor = mx.nd.image.to_tensor(frame)
 		frame_tensor = mx.nd.image.normalize(frame_tensor, mean=self.mean, std=self.std)
 		
-		with TimeIt('Processing time'):
+		with TimeIt('Obj detection time'):
 			# Run frame through network
 			class_IDs, scores, bounding_boxes = self.net(frame_tensor.expand_dims(axis=0).as_in_context(self.ctx))
 		

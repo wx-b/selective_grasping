@@ -95,8 +95,6 @@ class ssgg_grasping(object):
 		# Initialize some var
 		self.depth_crop = None
 		self.depth_copy_for_point_depth = None
-		self.depth_message = None
-		self.depth_message_ggcnn = None
 		self.points_out = None
 		self.grasp_img = None
 		self.ang_out = None
@@ -114,6 +112,8 @@ class ssgg_grasping(object):
 		self.max_pixel_reescaled = np.array([150, 150])
 
 		self.choosed_class = 0 # <<< JUST FOR TEST - REMOVE AFTER
+		self.receive_bb = False # <<< JUST FOR TEST - REMOVE AFTER
+		self.receive_lb = False # <<< JUST FOR TEST - REMOVE AFTER
 
 		# Tensorflow graph to allow use in callback.
 		self.graph = tf.get_default_graph()
@@ -137,15 +137,14 @@ class ssgg_grasping(object):
 		for label in labels:
 			label_list_int.append(label)
 
-		self.label_list_int = label_list_int 
-		print(label_list_int)
+		self.label_list_int = label_list_int
+		self.receive_lb = True
 		
 	def bounding_boxes_callback(self, msg):        
 		center_calibrated_point = self.center_calibrated_point
 		box_number = len(msg.data) / 4
 		
 		box_points = list(msg.data)
-		print("Box_points: ", box_points)
 		
 		i, index_inf, index_sup = 0, 0, 4
 		points_vec = []
@@ -179,7 +178,7 @@ class ssgg_grasping(object):
 			i += 1
 			
 		self.points_vec = points_vec
-		print(self.points_vec)
+		self.receive_bb = True
 
 	def get_depth_image_shot(self):
 		# Store the depth image when no objects are in the workspace
@@ -187,58 +186,54 @@ class ssgg_grasping(object):
 		self.depth_image_shot_raw.header = self.depth_message.header    
 
 	def copy_obj_to_depth_img(self):
-		points_vec = self.points_vec
-		label_list_int = self.label_list_int
+		if self.receive_lb:
+			label_list_int = self.label_list_int
+			if self.receive_bb and (self.choosed_class in label_list_int):
+				points_vec = self.points_vec			
 
-		choosed_class_index = label_list_int.index(self.choosed_class)
-		choosed_points_vec = points_vec[choosed_class_index]
+				choosed_class_index = label_list_int.index(self.choosed_class)
+				choosed_points_vec = points_vec[choosed_class_index]
 
-		# Copy the raw depth image
-		depth_image_shot_raw = self.bridge.imgmsg_to_cv2(self.depth_image_shot_raw)
-		depth_image_shot_raw_copy_cv2 = depth_image_shot_raw.copy()
+				# Copy the raw depth image
+				depth_image_shot_raw = self.bridge.imgmsg_to_cv2(self.depth_image_shot_raw)
+				depth_image_shot_raw_copy_cv2 = depth_image_shot_raw.copy()
 
-		# Copy the actual depth image 
-		depth_message = self.bridge.imgmsg_to_cv2(self.depth_message)
-		depth_message_copy = depth_message.copy()
+				# Copy the actual depth image 
+				depth_message = self.bridge.imgmsg_to_cv2(self.depth_message)
+				depth_message_copy = depth_message.copy()
 
-		number_of_boxes = len(choosed_points_vec)
-		if number_of_boxes > 0:
-			# i = 0
-			# while i < number_of_boxes:
-				# Copy the objects to the depth raw image based on the bounding box coordinates
-				# depth_image_shot_raw_copy_cv2[points_vec[i][1] : points_vec[i][3], points_vec[i][0] : points_vec[i][2]] \
-				# = depth_message_copy[points_vec[i][1] : points_vec[i][3], points_vec[i][0] : points_vec[i][2]] 
-				# i += 1
-			
-			depth_image_shot_raw_copy_cv2[choosed_points_vec[1] : choosed_points_vec[3], choosed_points_vec[0] : choosed_points_vec[2]] \
-				= depth_message_copy[choosed_points_vec[1] : choosed_points_vec[3], choosed_points_vec[0] : choosed_points_vec[2]] 
+				number_of_boxes = len(choosed_points_vec)
+				if number_of_boxes > 0:
+					depth_image_shot_raw_copy_cv2[choosed_points_vec[1] : choosed_points_vec[3], choosed_points_vec[0] : choosed_points_vec[2]] \
+						= depth_message_copy[choosed_points_vec[1] : choosed_points_vec[3], choosed_points_vec[0] : choosed_points_vec[2]] 
 
-			# Transform the depth raw image with the identified objects copied into ros msg type
-			depth_image_shot_raw_with_obj = self.bridge.cv2_to_imgmsg(depth_image_shot_raw_copy_cv2)
-			depth_image_shot_raw_with_obj.header = self.depth_message.header
-			self.depth_image_shot_with_object_copied = depth_image_shot_raw_with_obj
+					# Transform the depth raw image with the identified objects copied into ros msg type
+					depth_image_shot_raw_with_obj = self.bridge.cv2_to_imgmsg(depth_image_shot_raw_copy_cv2)
+					depth_image_shot_raw_with_obj.header = self.depth_message.header
+					self.depth_image_shot_with_object_copied = depth_image_shot_raw_with_obj
 
-			# Publish the depth image with the objects
-			self.depth_pub_copied_img.publish(depth_image_shot_raw_with_obj)
-			# Publish the raw depth image shot taken at the beginning
-			self.depth_pub_shot.publish(self.depth_image_shot_raw)
-		return number_of_boxes
+					# Publish the depth image with the objects
+					self.depth_pub_copied_img.publish(depth_image_shot_raw_with_obj)
+					# Publish the raw depth image shot taken at the beginning
+					self.depth_pub_shot.publish(self.depth_image_shot_raw)
+				
+				self.receive_bb = False
+				self.receive_lb = False
+				return number_of_boxes
 
 	def depth_process_ggcnn(self):
 		if args.gazebo:
 			depth_message = self.depth_image_shot_with_object_copied
 		else:
 			depth_message = self.depth_message
-
 		# INPUT
 		depth = self.bridge.imgmsg_to_cv2(depth_message)
 		
 		depth_copy_for_point_depth = depth.copy()
-
 		height_res, width_res = depth.shape
 		# It crops a 300x300 resolution square at the top of the depth image - depth[0:300, 170:470]
-		depth_crop = depth[0 : self.crop_size, 
-						   (width_res - self.crop_size)//2 : (width_res - self.crop_size)//2 + self.crop_size]
+		depth_crop = depth[0 : self.crop_size,
+						(width_res - self.crop_size)//2 : (width_res - self.crop_size)//2 + self.crop_size]
 		# Creates a deep copy of the depth_crop image
 		depth_crop = depth_crop.copy()
 		# Returns the positions represented by nan values
@@ -246,7 +241,6 @@ class ssgg_grasping(object):
 		depth_nan = depth_nan.copy()
 		# Substitute nan values by zero
 		depth_crop[depth_nan] = 0
-
 		# INPAINT PROCESS
 		depth_crop = cv2.copyMakeBorder(depth_crop, 1, 1, 1, 1, cv2.BORDER_DEFAULT)
 		# se o numero que esta no vetor acima for 0, retorna o numero 1 na mesma posicao (como se fosse True)
@@ -263,27 +257,26 @@ class ssgg_grasping(object):
 		depth_crop = depth_crop[1:-1, 1:-1]
 		# reescale image
 		depth_crop = depth_crop * depth_scale
-
 		# INFERENCE PROCESS
 		depth_crop = depth_crop/1000.0
 		# values smaller than -1 become -1, and values larger than 1 become 1.
 		depth_crop = np.clip((depth_crop - depth_crop.mean()), -1, 1)
+		
 		with self.graph.as_default():
 			pred_out = self.model.predict(depth_crop.reshape((1, self.crop_size, self.crop_size, 1)))
+		
 		points_out = pred_out[0].squeeze()
 		cos_out = pred_out[1].squeeze()
 		sin_out = pred_out[2].squeeze()
 		width_out = pred_out[3].squeeze() * 150.0  # Scaled 0-150:0-1
 		points_out[depth_nan] = 0
 		ang_out = np.arctan2(sin_out, cos_out) / 2.0
-
 		# FILTERING PROCESS
 		# The filters are applied to augment the chances of getting a good grasp pose
 		points_out_filtered = ndimage.filters.gaussian_filter(points_out, 5.0)
 		points_out_filtered = np.clip(points_out_filtered, 0.0, 1.0-1e-3)
 		ang_out_filtered = ndimage.filters.gaussian_filter(ang_out, 2.0)
 		width_out_filtered = ndimage.filters.gaussian_filter(width_out, 1.0)
-
 		# CONTROL PROCESS
 		link_pose, _ = self.transf.lookupTransform("base_link", "grasping_link", rospy.Time(0))
 		ROBOT_Z = link_pose[2]
@@ -298,7 +291,6 @@ class ssgg_grasping(object):
 		reescaled_width = int((width_res - self.crop_size) // 2 + max_pixel[1])
 		max_pixel_reescaled = [reescaled_height, reescaled_width]
 		point_depth = depth_copy_for_point_depth[max_pixel_reescaled[0], max_pixel_reescaled[1]]
-
 		# GRASP WIDTH PROCESS
 		g_width = 2.0 * (ROBOT_Z + 0.24) * np.tan(self.FOV / height_res * width_px / 2.0 / 180.0 * np.pi) #* 0.37
 		crop_size_width = float(self.crop_size)
@@ -311,39 +303,28 @@ class ssgg_grasping(object):
 			y = (max_pixel_reescaled[0] - self.cy)/(self.fy) * point_depth
 			grasping_point = [x, y, point_depth]
 
-		# OUTPUT
-		self.ang_out = ang_out
-		self.width_out = width_out
-		self.points_out = points_out
-		self.depth_message_ggcnn = depth_message
-		self.depth_crop = depth_crop
-		self.ang = ang
-		self.width_px = width_px
-		self.max_pixel = max_pixel
-		self.max_pixel_reescaled = max_pixel_reescaled
-		self.g_width = g_width
-		self.width_m = width_m
-		self.point_depth = point_depth
-		self.grasping_point = grasping_point
-
-	def publish_data_for_image_reading(self):
-		width_px = self.width_px
-		max_px = self.max_pixel
-		ang = self.ang
-		max_px_h = float(max_px[0])
-		max_px_w = float(max_px[1])
-		ggcnn_cmd_msg = Float32MultiArray()
-		ggcnn_cmd_msg.data = [width_px, max_px_h, max_px_w, ang]
+			# OUTPUT
+			self.ang_out = ang_out
+			self.width_out = width_out
+			self.points_out = points_out
+			self.depth_message_ggcnn = depth_message
+			self.depth_crop = depth_crop
+			self.ang = ang
+			self.width_px = width_px
+			self.max_pixel = max_pixel
+			self.max_pixel_reescaled = max_pixel_reescaled
+			self.g_width = g_width
+			self.width_m = width_m
+			self.point_depth = point_depth
+			self.grasping_point = grasping_point
 		
 	def get_grasp_image(self):
 		"""
 		Show the detected grasp regions of the image
 		"""
 		points_out = self.points_out
-
 		if points_out is not None:
 			max_pixel = self.max_pixel
-
 			# Draw grasp markers on the points_out and publish it. (for visualisation)
 			# points_out was used in gaussian_filter for last
 			grasp_img = np.zeros((self.crop_size, self.crop_size, 3), dtype=np.uint8)
@@ -354,7 +335,6 @@ class ssgg_grasping(object):
 			grasp_img[rr, cc, 0] = 0
 			grasp_img[rr, cc, 1] = 255
 			grasp_img[rr, cc, 2] = 0
-
 			self.grasp_img = grasp_img
 
 	def publish_images(self):
@@ -363,7 +343,6 @@ class ssgg_grasping(object):
 		ang_out = self.ang_out
 		depth_crop = self.depth_crop
 		width_img = self.width_out
-
 		if grasp_img is not None:
 			#Publish the output images (not used for control, only visualisation)
 			grasp_img = self.bridge.cv2_to_imgmsg(grasp_img, 'bgr8')
@@ -382,19 +361,18 @@ class ssgg_grasping(object):
 		ang = self.ang
 		width_m = self.width_m
 		g_width = self.g_width
-
 		# Output the best grasp pose relative to camera.
 		cmd_msg = Float32MultiArray()
 		cmd_msg.data = [grasping_point[0]/1000.0, grasping_point[1]/1000.0, grasping_point[2]/1000.0, -1*ang, width_m, g_width]
 		self.cmd_pub.publish(cmd_msg)
 		
 		self.br.sendTransform((cmd_msg.data[0], 
-							   cmd_msg.data[1], 
-							   cmd_msg.data[2]), 
-							   quaternion_from_euler(0.0, 0.0, -1*cmd_msg.data[3]),
-							   rospy.Time.now(),
-							   "object_detected",
-							   "camera_depth_optical_frame")
+							cmd_msg.data[1], 
+							cmd_msg.data[2]), 
+							quaternion_from_euler(0.0, 0.0, -1*cmd_msg.data[3]),
+							rospy.Time.now(),
+							"object_detected",
+							"camera_depth_optical_frame")
 
 def main():
 	grasp_detection = ssgg_grasping()
@@ -407,7 +385,7 @@ def main():
 	raw_input("Press enter to start the GGCNN")
 	# rate = rospy.Rate(120)
 	rospy.loginfo("Starting process")
-	rate = rospy.Rate(5)
+	rate = rospy.Rate(1)
 	while not rospy.is_shutdown():
 		if args.gazebo:
 			number_of_boxes = grasp_detection.copy_obj_to_depth_img()
@@ -415,7 +393,6 @@ def main():
 		if number_of_boxes > 0:
 			with TimeIt('ggcnn_process'):
 				grasp_detection.depth_process_ggcnn()
-			# grasp_detection.publish_data_for_image_reading()
 			grasp_detection.get_grasp_image()
 			grasp_detection.publish_images()
 			grasp_detection.publish_data_to_robot()        

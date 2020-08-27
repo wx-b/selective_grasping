@@ -40,10 +40,11 @@ def parse_args():
 	args = parser.parse_args()
 	return args
 
+args = parse_args()
+
 class vel_control(object):
-	def __init__(self, args, joint_values = None):
+	def __init__(self, joint_values = None):
 		rospy.init_node('command_GGCNN_ur5')
-		self.args = args
 		self.joint_values_home = joint_values
 
 		self.tf = TransformListener()
@@ -58,7 +59,7 @@ class vel_control(object):
 		print "Connected to server (pos_based_pos_traj_controller)"
 		
 		# Gazebo related
-		if self.args.gazebo:
+		if args.gazebo:
 			# For picking
 			self.pub_model_position = rospy.Publisher('/gazebo/set_link_state', LinkState, queue_size=1)
 			self.get_model_coordinates = rospy.ServiceProxy('/gazebo/get_link_state', GetLinkState)
@@ -92,7 +93,7 @@ class vel_control(object):
 		self.grasp_cartesian_pose = []
 		self.gripper_angle_grasp = 0.0
 		self.final_orientation = 0.0
-		if self.args.gazebo:
+		if args.gazebo:
 			self.offset_x = 0.0
 			self.offset_y = 0.0
 			self.offset_z = 0.020 # 0.019
@@ -178,7 +179,7 @@ class vel_control(object):
 		Arguments:
 			joint_values_from_ur5 {list} -- Actual angles of the UR5 Robot
 		"""
-		if self.args.gazebo:
+		if args.gazebo:
 			self.th3, self.robotic, self.th2, self.th1, self.th4, self.th5, self.th6 = joint_values_from_ur5.position
 			# print("Robotic angle: ", self.robotic)
 		else:
@@ -451,8 +452,7 @@ class vel_control(object):
 def main():
 	global PICKING
 
-	arg = parse_args()
-	ur5_vel = vel_control(arg)
+	ur5_vel = vel_control()
 
 	point_init_home = [-0.37, 0.11, 0.15]
 	joint_values_home = ur5_vel.get_ik(point_init_home)
@@ -464,12 +464,12 @@ def main():
 	ur5_vel.traj_planner(point_init_home, movement='fast')
 
 	point_init = [-0.37, 0.11, 0.05]
-	if not arg.ggcnn:
+	if not args.ggcnn:
 		# Remove all objects from the scene and press enter
 		raw_input("==== Press enter to move the robot to the 'depth cam shot' position!")
 		ur5_vel.traj_planner(point_init, movement='fast')
 		
-	if arg.gazebo:
+	if args.gazebo:
 		rospy.loginfo("Starting the gripper in Gazebo! Please wait...")
 		ur5_vel.gripper_send_position_goal(0.4)
 	else:
@@ -481,13 +481,13 @@ def main():
 	
 	while not rospy.is_shutdown():
 
-		raw_input("==== Press enter to move to the pre grasp position!")
+		raw_input("==== Press enter to move the robot to the pre-grasp position!)
 		ur5_vel.traj_planner(point_init, 'pregrasp', movement='fast')
 
 		# It closes the gripper before approaching the object
 		# It prevents the gripper to collide with other objects when grasping
 		raw_input("==== Press enter start the grasping process!")
-		if arg.gazebo:
+		if args.gazebo:
 			ur5_vel.gripper_send_position_goal(action='pre_grasp_angle')
 		else:
 			ur5_vel.command_gripper('p')
@@ -498,7 +498,7 @@ def main():
 
 		rospy.loginfo("Picking object")
 
-		if arg.gazebo:
+		if args.gazebo:
 			ur5_vel.gripper_send_position_goal(action='pick')
 			ur5_vel.get_link_position_picking()
 		else:
@@ -516,7 +516,7 @@ def main():
 		# After the bin location is reached, the robot will place the object and move back
 		# to the initial position
 		PICKING = False # Detach object
-		if arg.gazebo:
+		if args.gazebo:
 			ur5_vel.gripper_send_position_goal(0.3)
 			ur5_vel.delete_model_service_method()
 			ur5_vel.reset_link_position_picking()
