@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 import rospy
-import tf
 import rospkg
 from gazebo_msgs.srv import SpawnModel, GetModelState
-from geometry_msgs.msg import *
-import os
-# from pathlib import Path
-from tf import TransformListener
+from geometry_msgs.msg import Pose, Point, Quaternion
 from tf.transformations import quaternion_from_euler
 
 class spawn_objects():
@@ -73,6 +69,7 @@ if __name__ == '__main__':
 	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
 	spawn_obj.spawning('part_3', object_path, ptFinal, oriFinal)
 
+	################################################################################
 	# THESE OBJECTS'S MESH NEED TO BE CORRECTED
 	# THEY ARE NOT DISPLAYING CORRECTLY IN GAZEBO
 
@@ -85,3 +82,4 @@ if __name__ == '__main__':
 	# ptFinal = [0.05, -0.5, 0.0]
 	# oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
 	# spawn_obj.spawning('turbine_housing', object_path, ptFinal, oriFinal)
+	################################################################################

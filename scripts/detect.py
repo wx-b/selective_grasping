@@ -5,16 +5,11 @@ os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '0'
 import numpy as np
 import mxnet as mx
 import gluoncv as gcv
-from mxnet import gluon
-from gluoncv.data.transforms.presets import ssd, rcnn
 from gluoncv.model_zoo import get_model
 import gluoncv.data.transforms.image as timage
 import gluoncv.data.transforms.bbox as tbbox
 import cv2
-# import sys
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..')))
 import time
-from gluoncv.utils.bbox import bbox_iou 
 
 # ROS related
 import rospy
@@ -45,19 +40,24 @@ class Detector(object):
 		###############
 		# ROS Related #
 		###############
+
 		rospy.init_node('obj_detection', anonymous=True)		
+		
 		# Publish the image with the bounding boxes to ROS
 		self.img_pub = rospy.Publisher('img/bouding_box', Image, queue_size=1)
 		# Publish the bounding boxes coordinates
 		self.arraypub = rospy.Publisher('bb_points_array', Int32MultiArray, queue_size=10)
+		
 		# Subscribe to the image published in Gazebo
 		rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback, queue_size=10)		
+		
 		# Transform from ROS image to OpenCV image type
 		self.bridge = CvBridge()
 
 		###################
 		# GluonCV Related #
 		###################
+
 		# Choose the default processing unit
 		if ctx == 'cpu':
 			self.ctx = mx.cpu()
@@ -65,6 +65,7 @@ class Detector(object):
 			self.ctx = mx.gpu(0)
 		else:
 			raise ValueError('Invalid context.')
+
 		# Load GluonCV parameters
 		self.model_names_param = rospy.get_param("/model_names")
 		self.width = self.model_names_param[model_name]['width']
@@ -72,6 +73,7 @@ class Detector(object):
 		print("Model name: ", model_name)
 		print("Width: ", self.width)
 		print("Height: ", self.height)
+		print("Filter threshold: {} %".format(filter_threshold*100))
 
 		# TODO
 		# network = self.model_names_param[model_name]['network']
@@ -86,6 +88,7 @@ class Detector(object):
 		net.hybridize(static_alloc=True, static_shape=True)
 		net.initialize(force_reinit=True, ctx=self.ctx)
 		net.reset_class(classes=self.classes)
+		
 		# Load the parameter stored in the ROS package folder
 		rospack=rospkg.RosPack()
 		path = rospack.get_path("ssggcnn_ur5_grasping")
@@ -94,8 +97,12 @@ class Detector(object):
 		
 		self.net = net
 
+		# Used to transform the image as done in the training
 		self.mean = (0.485, 0.456, 0.406)
 		self.std = (0.229, 0.224, 0.225)
+		self.depth_img_height = 480
+		self.depth_img_width = 640
+
 
 	def filter_predictions(self, bounding_boxes, scores, class_IDs):
 		threshold = self.filter_threshold
@@ -129,24 +136,29 @@ class Detector(object):
 		
 		# Filter bounding boxes by their scores
 		fbounding_boxes, fscores, fclass_IDs = self.filter_predictions(bounding_boxes, scores, class_IDs)
+
+		# we need to resize the bounding box back to the original resolution (640, 480) (width, height)
+		resized_bbox = tbbox.resize(fbounding_boxes, (self.width, self.height), (self.depth_img_width, self.depth_img_height))
+		frame = timage.imresize(frame, self.depth_img_width, self.depth_img_height, 1)
 		
 		if fclass_IDs.size > 0:
-			img = gcv.utils.viz.cv_plot_bbox(frame, fbounding_boxes, fscores, fclass_IDs, class_names=self.net.classes)
+			img = gcv.utils.viz.cv_plot_bbox(frame, resized_bbox, fscores, fclass_IDs, class_names=self.net.classes)
+
+			self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))		
 		
-		# Uncomment this to plot also using OpenCV - Remember to use cv2.waitKey()
-		# gcv.utils.viz.cv_plot_image(img)
-		
-		self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))
+			# Uncomment this to plot also using OpenCV - Remember to use cv2.waitKey()
+			# gcv.utils.viz.cv_plot_image(img)
+			
 		# a = cv2.waitKey(1) # close window when ESC is pressed 
 		self.labels = fclass_IDs
 		self.scores = fscores
-		self.bboxes = fbounding_boxes
+		self.bboxes = resized_bbox
 
 	def detect_main(self):
 		color_img = self.color_img
 
 		points_to_send = Int32MultiArray()	
-		rate = rospy.Rate(10) # 10hz 
+		rate = rospy.Rate(5)
 		while not rospy.is_shutdown():
 			self.network_inference()
 			labels = self.labels
@@ -167,13 +179,12 @@ class Detector(object):
 					points_to_send_list.append(point1.y)
 					points_to_send_list.append(point2.x)
 					points_to_send_list.append(point2.y)
-
 			
-			points_to_send.data = points_to_send_list # assign the array with the value you want to send
-			print(points_to_send.data)
-			self.arraypub.publish(points_to_send)
-			points_to_send.data = []
-			rate.sleep()
+				points_to_send.data = points_to_send_list # assign the array with the value you want to send
+				print(points_to_send.data)
+				self.arraypub.publish(points_to_send)
+				points_to_send.data = []
+				rate.sleep()
 		
 def main():
 	# TODO: You just need to pass the param name inside the log folder (checkpoints folder configured in config.json)
@@ -182,7 +193,7 @@ def main():
 	obj_detect = Detector(params, 
 						  model_name='ssd_512_resnet50_v1_voc', 
 						  ctx='gpu', 
-						  filter_threshold=0.5, 
+						  filter_threshold=0.8, 
 						  nms_thresh=0.5)
 
 	obj_detect.detect_main()

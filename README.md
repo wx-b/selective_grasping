@@ -1,7 +1,8 @@
+<a id="top"></a>
 
 ------------
 ## Contents
-<a id="top"></a>
+
 1. [Authors](#1.0)
 2. [Required packages - Kinetic Version](#2.0)
 3. [Easy install](#3.0)

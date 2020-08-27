@@ -39,7 +39,6 @@ class TimeIt:
         self.t1 = time.time()
         print('%s: %s' % (self.s, self.t1 - self.t0))
         
-
 def parse_args():
     parser = argparse.ArgumentParser(description='GGCN and SSD grasping')
     parser.add_argument('--real', action='store_true', help='Consider the real intel realsense')
@@ -53,7 +52,6 @@ class ssgg_grasping(object):
         rospy.init_node('ggcnn_ssd_detection')
 
         self.args = args
-
         self.bridge = CvBridge()
 
         # Load the Network.
@@ -70,11 +68,11 @@ class ssgg_grasping(object):
         # Load GGCN parameters
         self.crop_size = rospy.get_param("/GGCNN/crop_size")
         self.FOV = rospy.get_param("/GGCNN/FOV")
-        self.camera_topic_info = rospy.get_param("/GGCNN/camera_topic_info")
+        camera_topic_info = rospy.get_param("/GGCNN/camera_topic_info")
         if self.args.real:
-            self.camera_topic = rospy.get_param("/GGCNN/camera_topic_realsense")
+            camera_topic = rospy.get_param("/GGCNN/camera_topic_realsense")
         else:
-            self.camera_topic = rospy.get_param("/GGCNN/camera_topic")
+            camera_topic = rospy.get_param("/GGCNN/camera_topic")
 
         # Output publishers.
         self.grasp_pub = rospy.Publisher('ggcnn/img/grasp', Image, queue_size=1) # Grasp quality
@@ -84,9 +82,12 @@ class ssgg_grasping(object):
         self.depth_pub_shot = rospy.Publisher('ggcnn/img/depth_shot', Image, queue_size=1) # Image taken 
         self.ang_pub = rospy.Publisher('ggcnn/img/ang', Image, queue_size=1) # Gripper angle
         self.cmd_pub = rospy.Publisher('ggcnn/out/command', Float32MultiArray, queue_size=1) # Command sent to robot
+    
+        # Subscribers
+        rospy.Subscriber(camera_topic, Image, self.get_depth_callback, queue_size=10)
+        rospy.Subscriber('bb_points_array', Int32MultiArray, self.bounding_boxes_callback, queue_size=10)        
         
         # Initialize some var
-        self.color_img = None
         self.depth_crop = None
         self.depth_copy_for_point_depth = None
         self.depth_message = None
@@ -100,15 +101,10 @@ class ssgg_grasping(object):
         self.width_m = 0.0
         self.g_width = 0.0
         self.grasping_point = []
-        self.depth_image_shot = None
         self.points_vec = []
-        self.depth_image_shot_with_object_copied = None # Grasp quality
         self.cropped = None # Depth raw image 
-         # Gripepr width
-        self.offset_ = 10
+        self.offset_ = 10 # Increase the bounding box size
         self.center_calibrated_point = np.array([312, 240]) # x, y
-
-        # Initialize some globals.
         self.max_pixel = np.array([150, 150])
         self.max_pixel_reescaled = np.array([150, 150])
 
@@ -116,98 +112,86 @@ class ssgg_grasping(object):
         self.graph = tf.get_default_graph()
 
         # Get the camera parameters
-        camera_info_msg = rospy.wait_for_message(self.camera_topic_info, CameraInfo)
+        camera_info_msg = rospy.wait_for_message(camera_topic_info, CameraInfo)
         K = camera_info_msg.K
         self.fx = K[0]
         self.cx = K[2]
         self.fy = K[4]
-        self.cy = K[5]
-
-        # Subscribers
-        rospy.Subscriber(self.camera_topic, Image, self.get_depth_callback, queue_size=10)
-        rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback, queue_size=10)
-        rospy.Subscriber('sdd_points_array', Int32MultiArray, self.bounding_boxes_callback, queue_size=10)
-        # rospy.Subscriber(self.camera_topic, Image, self.depth_callback, queue_size=10)
+        self.cy = K[5]        
     
     def get_depth_callback(self, depth_message):
         self.depth_message = depth_message
         
-    def bounding_boxes_callback(self, msg):
-        # print("msg: ", msg)
+    def bounding_boxes_callback(self, msg):        
         center_calibrated_point = self.center_calibrated_point
         box_number = len(msg.data) / 4
-        if box_number != 0:
-            depth = self.bridge.imgmsg_to_cv2(self.depth_message)
-            actual_depth_image = depth.copy()
+        
+        box_points = list(msg.data)
+        
+        i, index_inf, index_sup = 0, 0, 4
+        points_vec = []
+        offset = self.offset_
+        K = 0.2
+        
+        # Adjust the RGB B.B.C. (Bounding Box Coordinates) to the Depth image B.B.C.
+        while i < box_number:
+            # Get each one of the 4 coordinates of each bounding box
+            points_from_box = box_points[index_inf: index_sup]
+
+            # Since we don't have the RGB image and depth aligned, we need to 
+            # adjust the bounding box location from the RGB image to the depth image manually
+            center = ((points_from_box[0] + points_from_box[2])/2, (points_from_box[1] + points_from_box[3])/2)
+            dist = [int(center[0] - center_calibrated_point[0]), int(center[1] - center_calibrated_point[1])]
+            final_distance = [int(dist[0]*K), int(dist[1]*K)]
+            start_point = (points_from_box[0] + final_distance[0] - offset, points_from_box[1] + final_distance[1] - offset)
+            end_point = (points_from_box[2] + final_distance[0] + offset, points_from_box[3] + final_distance[1] + offset)
             
-            box_points = list(msg.data)
-            # print(box_points)
-            i, index_inf, index_sup = 0, 0, 4
-            points_vec = []
-            offset = self.offset_
-            K = 0.2
-            while i < box_number:
-                points_from_box = box_points[index_inf: index_sup]
-
-                center = ((points_from_box[0] + points_from_box[2])/2, (points_from_box[1] + points_from_box[3])/2)
-
-                dist = [int(center[0] - center_calibrated_point[0]), int(center[1] - center_calibrated_point[1])]
-
-                final_distance = [int(dist[0]*K), int(dist[1]*K)]
-
-                start_point = (points_from_box[0] + final_distance[0] - offset, points_from_box[1] + final_distance[1] - offset)
-                end_point = (points_from_box[2] + final_distance[0] + offset, points_from_box[3] + final_distance[1] + offset)
-
-                # start_point = (points_from_box[0] - offset, points_from_box[1] - offset)
-                # end_point = (points_from_box[2] + offset, points_from_box[3] + offset)
-                actual_depth_image = cv2.rectangle(actual_depth_image, start_point, end_point, (200, 0, 0), 2)
-                
-                new_points = [start_point[0], start_point[1], end_point[0], end_point[1]]
-                points_vec.append(new_points)
-
-                index_inf += 4
-                index_sup += 4
-                i += 1
-
-            self.points_vec = points_vec
-            points_vec = []
-
-    def image_callback(self, color_msg):
-        color_img = self.bridge.imgmsg_to_cv2(color_msg)
-        height_res, width_res, _ = color_img.shape
-        color_img = color_img[0 : self.crop_size, 
-                    (width_res - self.crop_size)//2 : (width_res - self.crop_size)//2 + self.crop_size]
-        self.color_img = color_img
+            # The new adjusted bounding box coordinates 
+            new_bb_coordinates = [start_point[0], start_point[1], end_point[0], end_point[1]]
+            points_vec.append(new_bb_coordinates)
+            index_inf += 4
+            index_sup += 4
+            i += 1
+            
+        self.points_vec = points_vec
+        print(self.points_vec)
 
     def get_depth_image_shot(self):
-        self.depth_image_shot = rospy.wait_for_message("camera/depth/image_raw", Image)
-        self.depth_image_shot.header = self.depth_message.header
+        # Store the depth image when no objects are in the workspace
+        self.depth_image_shot_raw = rospy.wait_for_message("camera/depth/image_raw", Image)
+        self.depth_image_shot_raw.header = self.depth_message.header    
 
     def copy_obj_to_depth_img(self):
         points = self.points_vec
-        depth_image_shot = deepcopy(self.depth_image_shot)
-        depth_image_shot = self.bridge.imgmsg_to_cv2(depth_image_shot)
-        depth_image_shot_copy = depth_image_shot.copy()
 
-        depth_message = self.depth_message
-        depth_message = self.bridge.imgmsg_to_cv2(depth_message)
+        # Copy the raw depth image
+        depth_image_shot_raw = self.bridge.imgmsg_to_cv2(self.depth_image_shot_raw)
+        depth_image_shot_raw_copy_cv2 = depth_image_shot_raw.copy()
+
+        # Copy the actual depth image 
+        depth_message = self.bridge.imgmsg_to_cv2(self.depth_message)
         depth_message_copy = depth_message.copy()
 
         number_of_boxes = len(points)
-        i = 0
-        while i < number_of_boxes:
-            depth_image_shot_copy[points[i][1] : points[i][3], points[i][0] : points[i][2]] \
-             = depth_message_copy[points[i][1] : points[i][3], points[i][0] : points[i][2]] 
-            i += 1
+        if number_of_boxes > 0:
+            i = 0
+            while i < number_of_boxes:
+                # Copy the objects to the depth raw image based on the bounding box coordinates
+                depth_image_shot_raw_copy_cv2[points[i][1] : points[i][3], points[i][0] : points[i][2]] \
+                = depth_message_copy[points[i][1] : points[i][3], points[i][0] : points[i][2]] 
+                i += 1
 
-        depth_image_shot = self.bridge.cv2_to_imgmsg(depth_image_shot_copy)
-        depth_image_shot.header = self.depth_message.header
-        self.depth_image_shot_with_object_copied = depth_image_shot
+            # Transform the depth raw image with the identified objects copied into ros msg type
+            depth_image_shot_raw_with_obj = self.bridge.cv2_to_imgmsg(depth_image_shot_raw_copy_cv2)
+            depth_image_shot_raw_with_obj.header = self.depth_message.header
+            self.depth_image_shot_with_object_copied = depth_image_shot_raw_with_obj
 
-        self.depth_pub_copied_img.publish(depth_image_shot)
-        self.depth_pub_shot.publish(self.depth_image_shot)
+            # Publish the depth image with the objects
+            self.depth_pub_copied_img.publish(depth_image_shot_raw_with_obj)
+            # Publish the raw depth image shot taken at the beginning
+            self.depth_pub_shot.publish(self.depth_image_shot_raw)
+        return number_of_boxes
 
-    # vai ter que se inscrever na copia da imagem (shot + square)
     def depth_process_ggcnn(self):
         if self.args.ssggcnn:
             depth_message = self.depth_image_shot_with_object_copied
@@ -386,22 +370,26 @@ def main():
     rospy.sleep(3.0)
 
     if args.ssggcnn:
-        raw_input("Move the objects out of the camera view and move the robot to the pre-grasp position.")
+        raw_input("Move the objects out of the camera view and move the robot to the depth cam shot position before continuing.")
         grasp_detection.get_depth_image_shot()
     
     raw_input("Press enter to start the GGCNN")
     # rate = rospy.Rate(120)
     rospy.loginfo("Starting process")
+    rate = rospy.Rate(5)
     while not rospy.is_shutdown():
         if args.ssggcnn:
-            grasp_detection.copy_obj_to_depth_img()
-        with TimeIt('ggcnn_process'):
-            grasp_detection.depth_process_ggcnn()
-        grasp_detection.publish_data_for_image_reading()
-        grasp_detection.get_grasp_image()
-        grasp_detection.publish_images()
-        grasp_detection.publish_data_to_robot()        
-        # rate.sleep()
+            number_of_boxes = grasp_detection.copy_obj_to_depth_img()
+        
+        if number_of_boxes > 0:
+            with TimeIt('ggcnn_process'):
+                grasp_detection.depth_process_ggcnn()
+            # grasp_detection.publish_data_for_image_reading()
+            grasp_detection.get_grasp_image()
+            grasp_detection.publish_images()
+            grasp_detection.publish_data_to_robot()        
+        
+        rate.sleep()
 
 if __name__ == '__main__':
     try:

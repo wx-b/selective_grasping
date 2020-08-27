@@ -1,3 +1,0 @@
-<launch>
-  <node name="detection" pkg="ssggcnn_ur5_grasping" type="main.py" output="screen"/>
-</launch>
