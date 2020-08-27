@@ -15,7 +15,6 @@ import time
 import rospy
 from std_msgs.msg import Int32MultiArray # String
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import Point
 from cv_bridge import CvBridge
 import rospkg
 
@@ -47,6 +46,7 @@ class Detector(object):
 		self.img_pub = rospy.Publisher('img/bouding_box', Image, queue_size=1)
 		# Publish the bounding boxes coordinates
 		self.arraypub = rospy.Publisher('bb_points_array', Int32MultiArray, queue_size=10)
+		self.labelpub = rospy.Publisher('label_array', Int32MultiArray, queue_size=10)
 		
 		# Subscribe to the image published in Gazebo
 		rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback, queue_size=10)		
@@ -151,39 +151,38 @@ class Detector(object):
 			
 		# a = cv2.waitKey(1) # close window when ESC is pressed 
 		self.labels = fclass_IDs
-		self.scores = fscores
 		self.bboxes = resized_bbox
 
 	def detect_main(self):
 		color_img = self.color_img
 
-		points_to_send = Int32MultiArray()	
-		rate = rospy.Rate(5)
+		points_to_send = Int32MultiArray()
+		labels_to_send = Int32MultiArray()
+	
+		rate = rospy.Rate(1)
 		while not rospy.is_shutdown():
 			self.network_inference()
 			labels = self.labels
-			scores = self.scores
 			bboxes = self.bboxes
 			size = len(bboxes)
 			if size != 0:
 				points_to_send_list = []
-				for bbox in bboxes:
-					point1= Point()
-					point2= Point()
-					point1.x=int(bbox[0])
-					point1.y=int(bbox[1])
-					point2.x=int(bbox[2])
-					point2.y=int(bbox[3])
-
-					points_to_send_list.append(point1.x)
-					points_to_send_list.append(point1.y)
-					points_to_send_list.append(point2.x)
-					points_to_send_list.append(point2.y)
+				labels_to_send_list = []
+				for label, bbox in zip(labels, bboxes):
+					labels_to_send_list.append(int(label))
+					points_to_send_list.append(int(bbox[0]))
+					points_to_send_list.append(int(bbox[1]))
+					points_to_send_list.append(int(bbox[2]))
+					points_to_send_list.append(int(bbox[3]))
 			
 				points_to_send.data = points_to_send_list # assign the array with the value you want to send
+				labels_to_send.data = labels_to_send_list
 				print(points_to_send.data)
+				print(labels_to_send.data)
 				self.arraypub.publish(points_to_send)
+				self.labelpub.publish(labels_to_send)
 				points_to_send.data = []
+				labels_to_send.data = []
 				rate.sleep()
 		
 def main():
