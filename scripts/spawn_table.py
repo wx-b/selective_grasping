@@ -39,7 +39,7 @@ def spawn_table():
 	rospy.wait_for_service("gazebo/spawn_sdf_model")
 	model_coordinates = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
 	
-	Home = rospack.get_path('ssggcnn_ur5_grasping')
+	Home = rospack.get_path('selective_grasping')
 
 	path_table = Home + '/models/table/model.sdf'
 

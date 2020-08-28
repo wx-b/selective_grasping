@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ssggcnn_ur5_grasping)
+project(selective_grasping)
 
 find_package(catkin REQUIRED COMPONENTS
   pcl_conversions

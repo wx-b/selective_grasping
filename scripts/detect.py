@@ -91,7 +91,7 @@ class Detector(object):
 		
 		# Load the parameter stored in the ROS package folder
 		rospack=rospkg.RosPack()
-		path = rospack.get_path("ssggcnn_ur5_grasping")
+		path = rospack.get_path("selective_grasping")
 		param_path = path + "/params/" + param
 		net.load_parameters(param_path, ctx=self.ctx)
 		

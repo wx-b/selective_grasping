@@ -58,12 +58,12 @@ mkdir -p ~/catkin_ws_new/src
 Clone this repository into the src folder
 ```bash
 cd ~/catkin_ws_new/src
-git clone https://github.com/lar-deeufba/ssggcnn_ur5_grasping
+git clone https://github.com/caiobarrosv/selective_grasping
 ```
 
 Run the install.sh file
 ```bash
-cd ~/catkin_ws_new/src/ssggcnn_ur5_grasping/install
+cd ~/catkin_ws_new/src/selective_grasping/install
 ./install.sh
 ```
 ------------
@@ -75,31 +75,31 @@ Please follow each following steps:
 
 ### 4.1 - Launch Gazebo:
 ```bash
-roslaunch ssggcnn_ur5_grasping gazebo_ur5.launch
+roslaunch selective_grasping gazebo_ur5.launch
 ```
 
 ### 4.2 - Run the UR5 control node 
 Press enter after the following message appears and jump to the step 4.3:
 "==== Press enter to move the robot to the 'depth cam shot' position!"
 ```bash
-rosrun ssggcnn_ur5_grasping ur5_open_loop.py --gazebo
+rosrun selective_grasping ur5_open_loop.py --gazebo
 ```
 
 ### 4.3 - Run the SSD node
 ```bash
-rosrun ssggcnn_ur5_grasping main.py
+rosrun selective_grasping main.py
 ```
 
 ### 4.4 - Run the GG-CNN node
 Press enter after the following message appears and jump to the step 4.5:
 "Press enter to start the GGCNN"
 ```bash
-rosrun ssggcnn_ur5_grasping run_ggcnn.py --ssggcnn
+rosrun selective_grasping run_ggcnn.py --ssggcnn
 ```
 
 ### 4.5 - Spawn the objects in the workspace
 ```bash
-rosrun ssggcnn_ur5_grasping spawn_objects.py
+rosrun selective_grasping spawn_objects.py
 ```
 
 ### 4.6 - UR5 control node
@@ -109,7 +109,7 @@ Press enter to complete each related task specified in ur5_open_loop.py
 ### 4.7 - Change the Gazebo properties (OPTIONAL)
 It will speed up your Gazebo simulation a little bit :)
 ```bash
-rosrun ssggcnn_ur5_grasping change_gazebo_properties.py
+rosrun selective_grasping change_gazebo_properties.py
 ```
 
 ### 4.8 - Visualize the images published by the GG-CNN
@@ -121,5 +121,5 @@ rosrun rqt_image_view
 ### 4.9 - Visualize depth cloud in RVIZ
 If you want to visualize the data being published by the Intel Realsense D435 please run the following node:
 ```bash
-rosrun ssggcnn_ur5_grasping rviz_ur5.launch
+rosrun selective_grasping rviz_ur5.launch
 ```

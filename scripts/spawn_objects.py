@@ -10,7 +10,7 @@ class spawn_objects():
 		rospy.init_node('spawn_model')
 
 		rospack = rospkg.RosPack()
-		self.Home = rospack.get_path('ssggcnn_ur5_grasping')
+		self.Home = rospack.get_path('selective_grasping')
 
 		self.Spawning1 = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
 		rospy.wait_for_service("gazebo/spawn_sdf_model")
