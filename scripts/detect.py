@@ -177,8 +177,6 @@ class Detector(object):
 			
 				points_to_send.data = points_to_send_list # assign the array with the value you want to send
 				labels_to_send.data = labels_to_send_list
-				print(points_to_send.data)
-				print(labels_to_send.data)
 				self.arraypub.publish(points_to_send)
 				self.labelpub.publish(labels_to_send)
 				points_to_send.data = []

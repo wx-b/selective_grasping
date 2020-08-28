@@ -5,22 +5,14 @@
     <link name="nozzle_link">
       <self_collide>true</self_collide>
 
-      <!-- <collision name="collision">
+      <collision name="collision">
         <geometry>
           <mesh>
             <uri>model://mahler_obj/nozzle/meshes/nozzle.dae</uri>
             <scale>0.6 0.6 0.6</scale>
           </mesh>
         </geometry>
-        <surface>
-          <friction>
-            <ode>
-              <mu>0.6</mu>
-              <mu2>0.6</mu2>
-            </ode>
-          </friction>
-        </surface>
-      </collision> -->
+      </collision>
 
       <visual name="visual">
         <geometry>

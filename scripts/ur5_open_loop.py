@@ -10,7 +10,7 @@ import rosservice
 import sys
 import re
 
-from std_msgs.msg import Float64MultiArray, Float32MultiArray
+from std_msgs.msg import Float64MultiArray, Float32MultiArray, String
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal, JointTolerance
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -28,10 +28,6 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from trac_ik_python.trac_ik import IK
 
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output  as outputMsg
-
-CLOSE_GRIPPER_VEL = 0.05
-MAX_GRIPPER_CLOSE_INIT = 0.25 # Maximum angle that the gripper should be started using velocity command
-PICKING = False # Tells the node that the object must follow the gripper
 
 def parse_args():
 	parser = argparse.ArgumentParser(description='AAPF_Orientation')
@@ -57,6 +53,8 @@ class vel_control(object):
 		print "Waiting for server (pos_based_pos_traj_controller)..."
 		self.client.wait_for_server()
 		print "Connected to server (pos_based_pos_traj_controller)"
+
+		self.picking = False # Tells the node that the object must follow the gripper
 		
 		# Gazebo related
 		if args.gazebo:
@@ -107,6 +105,7 @@ class vel_control(object):
 
 		# Topic published from GG-CNN Node
 		rospy.Subscriber('ggcnn/out/command', Float32MultiArray, self.ggcnn_command_callback, queue_size=1)
+		rospy.Subscriber("detecting_obj", String, self.obj_detection_callback, queue_size=1)
 				
 		# Robotiq control
 		self.pub_gripper_command = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=1)
@@ -124,6 +123,9 @@ class vel_control(object):
 
 	def turn_gripper_position_controller_on(self):
 		self.controller_switch(['gripper_controller_pos'], ['gripper_controller_vel'], 1)
+	
+	def obj_detection_callback(self, msg):
+		self.detection_state = msg.data
 
 	def monitor_contacts_left_finger_callback(self, msg):
 		if msg.states:
@@ -133,7 +135,7 @@ class vel_control(object):
 			# print("Left String_collision: ", string_collision)
 			if string_collision in self.finger_links:
 				string = msg.states[0].collision2_name
-				# print("Left Real string (object): ", string)
+				print("Left Real string (object): ", string)
 				self.string = re.findall(r'::(.+?)::', string)[0]
 				# print("Left before: ", self.string)
 			else:
@@ -150,7 +152,7 @@ class vel_control(object):
 			# print("Right String_collision: ", string_collision)
 			if string_collision in self.finger_links:
 				string = msg.states[0].collision2_name
-				# print("Right Real string (object): ", string)
+				print("Right Real string (object): ", string)
 				self.string = re.findall(r'::(.+?)::',string)[0]
 				# print("Right before: ", self.string)
 			else:
@@ -216,6 +218,7 @@ class vel_control(object):
 		
 	def get_link_position_picking(self):
 		link_name = self.string
+		print('String: ', link_name)
 		model_coordinates = self.get_model_coordinates(self.string, 'wrist_3_link')
 		self.model_pose_picking = model_coordinates.link_state.pose
 
@@ -223,9 +226,8 @@ class vel_control(object):
 		self.string = ""
 
 	def object_picking(self):
-		global PICKING
-
-		if PICKING:
+		picking = self.picking
+		if picking:
 			# angle = quaternion_from_euler(1.57, 0.0, 0.0)
 			object_picking = LinkState()
 			object_picking.link_name = self.string
@@ -446,29 +448,81 @@ class vel_control(object):
 		
 	def move_home_on_shutdown(self):
 		self.client.cancel_goal()
-		# self.client_gripper.cancel_goal()
 		rospy.loginfo("Shutting down node...")
+	
+	def grasp_main(self, point_init_home, depth_shot_point):
+		while not rospy.is_shutdown():
+			# Before pressing ENTER you should observe if the GG-CNN is getting the
+			# right grasp on the selected object (green point in the grasp image)
+			# just for safety
+			raw_input("==== Press enter start the grasping process!")
+			if self.detection_state == 'detected':
+				self.traj_planner([], 'pregrasp', movement='fast')
+
+				# It closes the gripper before approaching the object
+				# It prevents the gripper to collide with other objects when grasping
+				if args.gazebo:
+					self.gripper_send_position_goal(action='pre_grasp_angle')
+				else:
+					self.command_gripper('p')		
+
+				# Generate the trajectory to the grasp position - BE CAREFUL!
+				self.traj_planner([], 'grasp', movement='slow')
+
+				rospy.loginfo("Picking object")
+				if args.gazebo:
+					self.gripper_send_position_goal(action='pick')
+					self.get_link_position_picking()
+				else:
+					raw_input("==== Press enter to close the gripper!")
+					self.command_gripper('c')
+
+				rospy.loginfo("Moving object to the bin")
+				# After a collision is detected, the arm will start the picking action
+				self.picking = True # Attach object
+				self.traj_planner([-0.45, 0.0, 0.15], movement='fast')
+				self.traj_planner([-0.45, -0.16, 0.15], movement='fast')
+				self.traj_planner([-0.45, -0.16, 0.08], movement='slow') # Be careful when approaching the bin
+
+				rospy.loginfo("Placing object")
+				# After the bin location is reached, the robot will place the object and move back
+				# to the initial position
+				self.picking = False # Detach object
+				if args.gazebo:
+					self.gripper_send_position_goal(0.3)
+					self.delete_model_service_method()
+					self.reset_link_position_picking()
+				else:
+					self.command_gripper('o')
+				
+				rospy.loginfo("Moving back to home position")
+				self.traj_planner([-0.45, -0.16, 0.15], movement='fast')
+				self.traj_planner(point_init_home, movement='fast')
+				self.traj_planner(depth_shot_point, movement='slow')
+			else:
+				rospy.loginfo('Please move the object so it can be detected!')
 
 def main():
-	global PICKING
-
 	ur5_vel = vel_control()
-
 	point_init_home = [-0.37, 0.11, 0.15]
 	joint_values_home = ur5_vel.get_ik(point_init_home)
 	ur5_vel.joint_values_home = joint_values_home
+
+	# Pick order
+	obj_to_pick = [0, 1, 2, 3, 4, 5]
 
 	# Send the robot to the custom HOME position
 	raw_input("==== Press enter to 'home' the robot!")
 	rospy.on_shutdown(ur5_vel.move_home_on_shutdown)
 	ur5_vel.traj_planner(point_init_home, movement='fast')
 
-	point_init = [-0.37, 0.11, 0.05]
+	depth_shot_point = [-0.37, 0.11, 0.05]
+
 	if not args.ggcnn:
 		# Remove all objects from the scene and press enter
 		raw_input("==== Press enter to move the robot to the 'depth cam shot' position!")
-		ur5_vel.traj_planner(point_init, movement='fast')
-		
+		ur5_vel.traj_planner(depth_shot_point, movement='fast')
+
 	if args.gazebo:
 		rospy.loginfo("Starting the gripper in Gazebo! Please wait...")
 		ur5_vel.gripper_send_position_goal(0.4)
@@ -479,54 +533,7 @@ def main():
 		ur5_vel.command_gripper('a')
 		ur5_vel.command_gripper('o')
 	
-	while not rospy.is_shutdown():
-
-		raw_input("==== Press enter to move the robot to the pre-grasp position!)
-		ur5_vel.traj_planner(point_init, 'pregrasp', movement='fast')
-
-		# It closes the gripper before approaching the object
-		# It prevents the gripper to collide with other objects when grasping
-		raw_input("==== Press enter start the grasping process!")
-		if args.gazebo:
-			ur5_vel.gripper_send_position_goal(action='pre_grasp_angle')
-		else:
-			ur5_vel.command_gripper('p')
-
-		# Generate the trajectory to the grasp position
-		# BE CAREFUL!
-		ur5_vel.traj_planner([], 'grasp', movement='slow')
-
-		rospy.loginfo("Picking object")
-
-		if args.gazebo:
-			ur5_vel.gripper_send_position_goal(action='pick')
-			ur5_vel.get_link_position_picking()
-		else:
-			raw_input("==== Press enter to close the gripper!")
-			ur5_vel.command_gripper('c')
-
-		rospy.loginfo("Moving object to the bin")
-		# After a collision is detected, the arm will start the picking action
-		PICKING = True # Attach object
-		ur5_vel.traj_planner([-0.45, 0.0, 0.15], movement='fast')
-		ur5_vel.traj_planner([-0.45, -0.16, 0.15], movement='fast')
-		ur5_vel.traj_planner([-0.45, -0.16, 0.08], movement='slow') # Be careful when approaching the bin
-
-		rospy.loginfo("Placing object")
-		# After the bin location is reached, the robot will place the object and move back
-		# to the initial position
-		PICKING = False # Detach object
-		if args.gazebo:
-			ur5_vel.gripper_send_position_goal(0.3)
-			ur5_vel.delete_model_service_method()
-			ur5_vel.reset_link_position_picking()
-		else:
-			ur5_vel.command_gripper('o')
-
-		rospy.loginfo("Moving back to home position")
-		ur5_vel.traj_planner([-0.45, -0.16, 0.15], movement='fast')
-		ur5_vel.traj_planner(point_init_home, movement='fast')
-		ur5_vel.traj_planner(point_init, movement='slow')
+	ur5_vel.grasp_main(point_init_home, depth_shot_point)
 
 if __name__ == '__main__':
 	try:

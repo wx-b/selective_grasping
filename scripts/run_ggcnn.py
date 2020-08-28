@@ -22,8 +22,9 @@ import rospy
 import rospkg
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo, JointState
-from std_msgs.msg import Float32MultiArray, Int32MultiArray
+from std_msgs.msg import Float32MultiArray, Int32MultiArray, String
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
+from std_msgs.msg import String
 
 def parse_args():
 	parser = argparse.ArgumentParser(description='GG-CNN Node')
@@ -86,7 +87,8 @@ class ssgg_grasping(object):
 		self.depth_pub_shot = rospy.Publisher('ggcnn/img/depth_shot', Image, queue_size=1) # Image taken 
 		self.ang_pub = rospy.Publisher('ggcnn/img/ang', Image, queue_size=1) # Gripper angle
 		self.cmd_pub = rospy.Publisher('ggcnn/out/command', Float32MultiArray, queue_size=1) # Command sent to robot
-	
+		self.string_pub = rospy.Publisher('detecting_obj', String, queue_size=1)
+
 		# Subscribers
 		rospy.Subscriber(camera_topic, Image, self.get_depth_callback, queue_size=10)
 		rospy.Subscriber('bb_points_array', Int32MultiArray, self.bounding_boxes_callback, queue_size=10)
@@ -112,8 +114,8 @@ class ssgg_grasping(object):
 		self.max_pixel_reescaled = np.array([150, 150])
 
 		self.choosed_class = 0 # <<< JUST FOR TEST - REMOVE AFTER
-		self.receive_bb = False # <<< JUST FOR TEST - REMOVE AFTER
-		self.receive_lb = False # <<< JUST FOR TEST - REMOVE AFTER
+		self.receive_bb = False
+		self.receive_lb = False
 
 		# Tensorflow graph to allow use in callback.
 		self.graph = tf.get_default_graph()
@@ -216,10 +218,13 @@ class ssgg_grasping(object):
 					self.depth_pub_copied_img.publish(depth_image_shot_raw_with_obj)
 					# Publish the raw depth image shot taken at the beginning
 					self.depth_pub_shot.publish(self.depth_image_shot_raw)
+					# Publish the state of the detection
+					self.string_pub.publish('detected')
 				
 				self.receive_bb = False
 				self.receive_lb = False
 				return number_of_boxes
+		self.string_pub.publish('not_detected')
 
 	def depth_process_ggcnn(self):
 		if args.gazebo:
