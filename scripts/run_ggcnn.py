@@ -238,7 +238,7 @@ class ssgg_grasping(object):
 		height_res, width_res = depth.shape
 		# It crops a 300x300 resolution square at the top of the depth image - depth[0:300, 170:470]
 		depth_crop = depth[0 : self.crop_size,
-						(width_res - self.crop_size)//2 : (width_res - self.crop_size)//2 + self.crop_size]
+						  (width_res - self.crop_size)//2 : (width_res - self.crop_size)//2 + self.crop_size]
 		# Creates a deep copy of the depth_crop image
 		depth_crop = depth_crop.copy()
 		# Returns the positions represented by nan values

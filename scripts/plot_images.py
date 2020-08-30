@@ -109,6 +109,22 @@ class plot_images(object):
 	def image_callback(self, color_msg):
 		self.color_img = self.bridge.imgmsg_to_cv2(color_msg)
 
+	def plot_depth_position(self):
+		depth_image = self.depth_image
+		
+		print('Red point: ', depth_image[470, 630])
+		print('Green point: ', depth_image[10, 10])
+		
+		depth_image = cv2.cvtColor(depth_image, cv2.COLOR_GRAY2BGR)
+		depth_height_res, depth_width_res, _ = depth_image.shape
+		depth_image = depth_image.astype('uint8')
+		
+		# Plot the crop sizea are of the depth image used in the GG-CNN
+		depth_image = cv2.circle(depth_image, (630, 470), 10, (255, 0, 0), 2) 
+		depth_image = cv2.circle(depth_image, (10, 10), 10, (0, 255, 0), 2) 
+		plt.imshow(depth_image)
+		self.fig.canvas.draw()
+
 	def plot_images_overlapped(self):
 		if self.receive_bb:
 			points_vec = self.points_vec
@@ -152,7 +168,8 @@ if __name__ == "__main__":
 	plt_imgs = plot_images()
 
 	while not rospy.is_shutdown():
-		plt_imgs.plot_images_overlapped()
+		# plt_imgs.plot_images_overlapped()
+		plt_imgs.plot_depth_position()
 		
 
 

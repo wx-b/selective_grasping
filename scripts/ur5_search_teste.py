@@ -465,7 +465,7 @@ class vel_control(object):
 				if args.gazebo:
 					self.gripper_send_position_goal(action='pre_grasp_angle')
 				else:
-					self.command_gripper('p')
+					self.command_gripper('p')		
 
 				# Generate the trajectory to the grasp position - BE CAREFUL!
 				self.traj_planner([], 'grasp', movement='slow')
