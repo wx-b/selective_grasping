@@ -149,6 +149,9 @@ class Detector(object):
 
 		# check if the bounding box is inside the 300x300 area of the GG-CNN grasping area
 		GGCNN_area = [190, 0, 480, 300]
+
+		img_2 = img.asnumpy()
+		img = cv2.rectangle(img_2, (GGCNN_area[0], GGCNN_area[1]), (GGCNN_area[2], GGCNN_area[3]), (255, 0, 0), 1)
 		
 		bbox_list, fscores_list, fclass_IDs_list = [], [], [] # bounding boxes of the chosen class
 		bbox_in, fscores_in, fclass_IDs_in = [], [], [] # bounding boxes inside GG-CNN area
@@ -178,10 +181,8 @@ class Detector(object):
 						fscores_in = np.array(fscores_in)
 						fclass_IDs_in = np.array(fclass_IDs_in)
 
-						img = gcv.utils.viz.cv_plot_bbox(img, bbox_in, fscores_in, fclass_IDs_in, class_names=self.net.classes)	
-						img = cv2.rectangle(img, (GGCNN_area[0], GGCNN_area[1]), (GGCNN_area[2], GGCNN_area[3]), (255, 0, 0), 1)
-
-						self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))		
+						img = gcv.utils.viz.cv_plot_bbox(img, bbox_in, fscores_in, fclass_IDs_in, class_names=self.net.classes)
+						# self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))		
 
 						self.labels = fclass_IDs_in
 						self.bboxes = bbox_in
@@ -200,18 +201,13 @@ class Detector(object):
 
 						img = gcv.utils.viz.cv_plot_bbox(img, bbox_list, fscores_list, fclass_IDs_list, class_names=self.net.classes)
 						self.detection_ready.publish(False)
-						img = cv2.rectangle(img, (GGCNN_area[0], GGCNN_area[1]), (GGCNN_area[2], GGCNN_area[3]), (255, 0, 0), 1)
-						self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))	
+						# self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))	
 			else:
 				print('The requestd obj was not found')		
-				img = img.asnumpy()
-				img = cv2.rectangle(img, (GGCNN_area[0], GGCNN_area[1]), (GGCNN_area[2], GGCNN_area[3]), (255, 0, 0), 1)
-				self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))	
 		else:
 			print('No object was found')		
-			img = img.asnumpy()
-			img = cv2.rectangle(img, (GGCNN_area[0], GGCNN_area[1]), (GGCNN_area[2], GGCNN_area[3]), (255, 0, 0), 1)
-			self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))
+		
+		self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))
 				
 	def detect_main(self):
 		color_img = self.color_img
