@@ -22,7 +22,7 @@ import rospy
 import rospkg
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo, JointState
-from std_msgs.msg import Float32MultiArray, Int32MultiArray, String
+from std_msgs.msg import Float32MultiArray, Int32MultiArray, String, Bool
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from std_msgs.msg import String
 
@@ -92,7 +92,8 @@ class ssgg_grasping(object):
 		# Subscribers
 		rospy.Subscriber(camera_topic, Image, self.get_depth_callback, queue_size=10)
 		rospy.Subscriber('bb_points_array', Int32MultiArray, self.bounding_boxes_callback, queue_size=10)
-		rospy.Subscriber('label_array', Int32MultiArray, self.labels_callback, queue_size=10)    
+		rospy.Subscriber('label_array', Int32MultiArray, self.labels_callback, queue_size=10)
+		rospy.Subscriber('detection_ready', Bool, self.detection_ready_callback ,queue_size=1) # Detection node detected something and is asking to generate a grasp pose
 		
 		# Initialize some var
 		self.depth_crop = None
@@ -113,7 +114,7 @@ class ssgg_grasping(object):
 		self.max_pixel = np.array([150, 150])
 		self.max_pixel_reescaled = np.array([150, 150])
 
-		self.choosed_class = 0 # <<< JUST FOR TEST - REMOVE AFTER
+		self.chosen_class = 0 # <<< JUST FOR TEST - REMOVE AFTER
 		self.receive_bb = False
 		self.receive_lb = False
 
@@ -130,6 +131,9 @@ class ssgg_grasping(object):
 	
 	def get_depth_callback(self, depth_message):
 		self.depth_message = depth_message
+	
+	def detection_ready_callback(self, detection_ready):
+		self.detection_ready_status = detection_ready
 	
 	def labels_callback(self, labels):
 		classes = self.classes
@@ -190,11 +194,11 @@ class ssgg_grasping(object):
 	def copy_obj_to_depth_img(self):
 		if self.receive_lb:
 			label_list_int = self.label_list_int
-			if self.receive_bb and (self.choosed_class in label_list_int):
+			if self.receive_bb and (self.chosen_class in label_list_int):
 				points_vec = self.points_vec			
 
-				choosed_class_index = label_list_int.index(self.choosed_class)
-				choosed_points_vec = points_vec[choosed_class_index]
+				chosen_class_index = label_list_int.index(self.chosen_class)
+				chosen_points_vec = points_vec[chosen_class_index]
 
 				# Copy the raw depth image
 				depth_image_shot_raw = self.bridge.imgmsg_to_cv2(self.depth_image_shot_raw)
@@ -204,10 +208,10 @@ class ssgg_grasping(object):
 				depth_message = self.bridge.imgmsg_to_cv2(self.depth_message)
 				depth_message_copy = depth_message.copy()
 
-				number_of_boxes = len(choosed_points_vec)
+				number_of_boxes = len(chosen_points_vec)
 				if number_of_boxes > 0:
-					depth_image_shot_raw_copy_cv2[choosed_points_vec[1] : choosed_points_vec[3], choosed_points_vec[0] : choosed_points_vec[2]] \
-						= depth_message_copy[choosed_points_vec[1] : choosed_points_vec[3], choosed_points_vec[0] : choosed_points_vec[2]] 
+					depth_image_shot_raw_copy_cv2[chosen_points_vec[1] : chosen_points_vec[3], chosen_points_vec[0] : chosen_points_vec[2]] \
+						= depth_message_copy[chosen_points_vec[1] : chosen_points_vec[3], chosen_points_vec[0] : chosen_points_vec[2]] 
 
 					# Transform the depth raw image with the identified objects copied into ros msg type
 					depth_image_shot_raw_with_obj = self.bridge.cv2_to_imgmsg(depth_image_shot_raw_copy_cv2)

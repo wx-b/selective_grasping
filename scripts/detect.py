@@ -13,7 +13,7 @@ import time
 
 # ROS related
 import rospy
-from std_msgs.msg import Int32MultiArray # String
+from std_msgs.msg import Int32MultiArray, Bool # String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import rospkg
@@ -47,6 +47,8 @@ class Detector(object):
 		# Publish the bounding boxes coordinates
 		self.arraypub = rospy.Publisher('bb_points_array', Int32MultiArray, queue_size=10)
 		self.labelpub = rospy.Publisher('label_array', Int32MultiArray, queue_size=10)
+		# Tells the system that the bounding box is inside the GG-CNN Area
+		self.detection_ready = rospy.Publisher('detection_ready', Bool, queue_size=1)
 		
 		# Subscribe to the image published in Gazebo
 		rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback, queue_size=10)		
@@ -103,6 +105,8 @@ class Detector(object):
 		self.depth_img_height = 480
 		self.depth_img_width = 640
 
+		self.chosen_class = 0 # <<<< JUST FOR TEST
+		self.receive_bb_status = False # Indicates if the 
 
 	def filter_predictions(self, bounding_boxes, scores, class_IDs):
 		threshold = self.filter_threshold
@@ -114,9 +118,6 @@ class Detector(object):
 
 	def image_callback(self, color_msg):
 		color_img = self.bridge.imgmsg_to_cv2(color_msg)
-		# height_res, width_res, _ = color_img.shape
-		# color_img = color_img[0 : self.crop_size, 
-					# (width_res - self.crop_size)//2 : (width_res - self.crop_size)//2 + self.crop_size]
 		self.color_img = color_img
 
 	def network_inference(self):
@@ -124,64 +125,125 @@ class Detector(object):
 		# while a is not 27:
 		color_img = self.color_img
 
+		# It is to correct the image size to fit a perfect square
+		# color_img = np.zeros((640, 640, 3)).astype('uint8')
+		# color_img[0:479] = color_img_raw[0:479]
+		# color_img = color_img.astype('uint8')
+
 		# Image pre-processing
 		frame = mx.nd.array(cv2.cvtColor(color_img, cv2.COLOR_BGR2RGB)).astype('uint8')
 		frame = timage.imresize(frame, self.width, self.height, 1)
 		frame_tensor = mx.nd.image.to_tensor(frame)
 		frame_tensor = mx.nd.image.normalize(frame_tensor, mean=self.mean, std=self.std)
 		
-		with TimeIt('Obj detection time'):
-			# Run frame through network
-			class_IDs, scores, bounding_boxes = self.net(frame_tensor.expand_dims(axis=0).as_in_context(self.ctx))
+		# with TimeIt('Obj detection time'):
+		# Run frame through network
+		class_IDs, scores, bounding_boxes = self.net(frame_tensor.expand_dims(axis=0).as_in_context(self.ctx))
 		
 		# Filter bounding boxes by their scores
 		fbounding_boxes, fscores, fclass_IDs = self.filter_predictions(bounding_boxes, scores, class_IDs)
 
 		# we need to resize the bounding box back to the original resolution (640, 480) (width, height)
 		resized_bbox = tbbox.resize(fbounding_boxes, (self.width, self.height), (self.depth_img_width, self.depth_img_height))
-		frame = timage.imresize(frame, self.depth_img_width, self.depth_img_height, 1)
+		img = timage.imresize(frame, self.depth_img_width, self.depth_img_height, 1)
+
+		# check if the bounding box is inside the 300x300 area of the GG-CNN grasping area
+		GGCNN_area = [190, 0, 480, 300]
 		
+		bbox_list, fscores_list, fclass_IDs_list = [], [], [] # bounding boxes of the chosen class
+		bbox_in, fscores_in, fclass_IDs_in = [], [], [] # bounding boxes inside GG-CNN area
+
+		# If any object is found
 		if fclass_IDs.size > 0:
-			img = gcv.utils.viz.cv_plot_bbox(frame, resized_bbox, fscores, fclass_IDs, class_names=self.net.classes)
+			# If the request object is found
+			if self.chosen_class in fclass_IDs:
+				print('found obj')
+				# we need to find all ocurrences of the class identified to consider
+				# situation where we have false positives as well
+				chosen_class_index = [i for i, x in enumerate(fclass_IDs) if x == self.chosen_class]
+				for class_index in chosen_class_index:
+					bbox_list.append(resized_bbox[class_index])
+					fscores_list.append(fscores[class_index])
+					fclass_IDs_list.append(fclass_IDs[class_index])
+					
+				for index, bbox in enumerate(bbox_list):
+					if bbox[0] > GGCNN_area[0] and bbox[1] > GGCNN_area[1] and bbox[2] < GGCNN_area[2] and \
+						bbox[3] < GGCNN_area[3]:
+						print('obj inside ggcnn_area')
+						bbox_in.append(bbox)
+						fscores_in.append(fscores_list[index])
+						fclass_IDs_in.append(fclass_IDs_list[index])
 
-			self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))		
-		
-			# Uncomment this to plot also using OpenCV - Remember to use cv2.waitKey()
-			# gcv.utils.viz.cv_plot_image(img)
-			
-		# a = cv2.waitKey(1) # close window when ESC is pressed 
-		self.labels = fclass_IDs
-		self.bboxes = resized_bbox
+						bbox_in = np.array(bbox_in)
+						fscores_in = np.array(fscores_in)
+						fclass_IDs_in = np.array(fclass_IDs_in)
 
+						img = gcv.utils.viz.cv_plot_bbox(img, bbox_in, fscores_in, fclass_IDs_in, class_names=self.net.classes)	
+						img = cv2.rectangle(img, (GGCNN_area[0], GGCNN_area[1]), (GGCNN_area[2], GGCNN_area[3]), (255, 0, 0), 1)
+
+						self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))		
+
+						self.labels = fclass_IDs_in
+						self.bboxes = bbox_in
+						self.receive_bb_status = True
+
+						self.detection_ready.publish(True)
+					else:
+						print('obj outside ggcnn_area')
+						bbox_list = np.array(bbox_list)
+						fscores_list = np.array(fscores_list)
+						fclass_IDs_list = np.array(fclass_IDs_list)
+
+						# resized_bbox = np.expand_dims(np.array(resized_bbox[chosen_class_index]), axis=0)
+						# fscores = np.expand_dims(np.array(fscores[chosen_class_index]), axis=0)
+						# fclass_IDs = np.expand_dims(np.array(fclass_IDs[chosen_class_index]), axis=0)
+
+						img = gcv.utils.viz.cv_plot_bbox(img, bbox_list, fscores_list, fclass_IDs_list, class_names=self.net.classes)
+						self.detection_ready.publish(False)
+						img = cv2.rectangle(img, (GGCNN_area[0], GGCNN_area[1]), (GGCNN_area[2], GGCNN_area[3]), (255, 0, 0), 1)
+						self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))	
+			else:
+				print('The requestd obj was not found')		
+				img = img.asnumpy()
+				img = cv2.rectangle(img, (GGCNN_area[0], GGCNN_area[1]), (GGCNN_area[2], GGCNN_area[3]), (255, 0, 0), 1)
+				self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))	
+		else:
+			print('No object was found')		
+			img = img.asnumpy()
+			img = cv2.rectangle(img, (GGCNN_area[0], GGCNN_area[1]), (GGCNN_area[2], GGCNN_area[3]), (255, 0, 0), 1)
+			self.img_pub.publish(CvBridge().cv2_to_imgmsg(img, 'bgr8'))
+				
 	def detect_main(self):
 		color_img = self.color_img
 
 		points_to_send = Int32MultiArray()
 		labels_to_send = Int32MultiArray()
 	
-		rate = rospy.Rate(1)
+		rate = rospy.Rate(4)
 		while not rospy.is_shutdown():
 			self.network_inference()
-			labels = self.labels
-			bboxes = self.bboxes
-			size = len(bboxes)
-			if size != 0:
-				points_to_send_list = []
-				labels_to_send_list = []
-				for label, bbox in zip(labels, bboxes):
-					labels_to_send_list.append(int(label))
-					points_to_send_list.append(int(bbox[0]))
-					points_to_send_list.append(int(bbox[1]))
-					points_to_send_list.append(int(bbox[2]))
-					points_to_send_list.append(int(bbox[3]))
-			
-				points_to_send.data = points_to_send_list # assign the array with the value you want to send
-				labels_to_send.data = labels_to_send_list
-				self.arraypub.publish(points_to_send)
-				self.labelpub.publish(labels_to_send)
-				points_to_send.data = []
-				labels_to_send.data = []
-				rate.sleep()
+			if self.receive_bb_status:
+				labels = self.labels
+				bboxes = self.bboxes
+				size = len(bboxes)
+				if size != 0:
+					points_to_send_list = []
+					labels_to_send_list = []
+					for label, bbox in zip(labels, bboxes):
+						labels_to_send_list.append(int(label))
+						points_to_send_list.append(int(bbox[0]))
+						points_to_send_list.append(int(bbox[1]))
+						points_to_send_list.append(int(bbox[2]))
+						points_to_send_list.append(int(bbox[3]))
+				
+					points_to_send.data = points_to_send_list # assign the array with the value you want to send
+					labels_to_send.data = labels_to_send_list
+					self.arraypub.publish(points_to_send)
+					self.labelpub.publish(labels_to_send)
+					points_to_send.data = []
+					labels_to_send.data = []
+				self.receive_bb_status = False
+			rate.sleep()
 		
 def main():
 	# TODO: You just need to pass the param name inside the log folder (checkpoints folder configured in config.json)

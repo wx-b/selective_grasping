@@ -41,11 +41,7 @@ class plot_images(object):
 		# Wait a little bit to get the images
 		rospy.sleep(2.0)
 
-		self.fig = plt.gcf()
-		self.fig.show()
-		self.fig.canvas.draw()
-
-		self.choosed_class = 0
+		self.chosen_class = 0
 		self.receive_bb = False
 
 	def labels_callback(self, labels):
@@ -126,50 +122,64 @@ class plot_images(object):
 		self.fig.canvas.draw()
 
 	def plot_images_overlapped(self):
-		if self.receive_bb:
-			points_vec = self.points_vec
-			depth_image = self.depth_image		
-			label_list_str = self.label_list_str
-			label_list_int = self.label_list_int
-			choosed_class = self.choosed_class
+		a = cv2.waitKey(0) # close window when ESC is pressed     
+		if self.receive_bb:			
+			while a != 27:
+				points_vec = self.points_vec
+				depth_image_raw = self.depth_image		
+				label_list_str = self.label_list_str
+				label_list_int = self.label_list_int
+				chosen_class = self.chosen_class
 
-			depth_image = cv2.cvtColor(depth_image, cv2.COLOR_GRAY2BGR)
-			depth_height_res, depth_width_res, _ = depth_image.shape
+				depth_image_raw = cv2.cvtColor(depth_image_raw, cv2.COLOR_GRAY2BGR)
+				depth_image = np.zeros((640, 640, 3))
+				depth_image[0:479] = depth_image_raw[0:479]
 
-			# color_img_gray = cv2.cvtColor(self.color_img, cv2.COLOR_BGR2GRAY)
-			color_img_gray = self.color_img
-			color_height_res, color_width_res, _ = color_img_gray.shape
+				depth_height_res, depth_width_res, _ = depth_image.shape
+				# print('depth_height: ', depth_height_res)
+				# print('depth_width: ', depth_width_res)
 
-			depth_image = depth_image.astype('uint8')
-			color_img_gray = color_img_gray.astype('uint8')
+				# color_img = cv2.cvtColor(self.color_img, cv2.COLOR_BGR2GRAY)
+				
+				color_img_raw = self.color_img
+				color_img = np.zeros((640, 640, 3))
+				color_img[0:479] = color_img_raw[0:479]
+				# print(color_img[:-1].shape)	
+				
+				color_height_res, color_width_res, color_channels = color_img.shape
+				
+				depth_image = depth_image.astype('uint8')
+				color_img = color_img.astype('uint8')
 
-			# Plot the crop sizea are of the depth image used in the GG-CNN
-			depth_image = cv2.rectangle(depth_image, (190, 0), (480, 300), (0, 0, 255), 3)
-			
-			added_image = cv2.addWeighted(color_img_gray, 0.5, depth_image, 1.0, 0)
+				# Plot the crop sizea are of the depth image used in the GG-CNN
+				depth_image = cv2.rectangle(depth_image, (190, 0), (480, 300), (0, 0, 255), 3)
+				
+				added_image = cv2.addWeighted(color_img, 0.6, depth_image, 1.0, 0)
 
-			for label, bbox in zip(label_list_str, points_vec):
-				added_image = cv2.rectangle(added_image, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 0, 0), 1)
-				added_image = cv2.putText(added_image, label, (bbox[0], bbox[1]-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0))
-			
-			if choosed_class in label_list_int:
-				choosed_class_index = label_list_int.index(choosed_class)
-				choosed_points_vec = points_vec[choosed_class_index]
-				choosed_label_list_str = label_list_str[choosed_class_index]
+				for label, bbox in zip(label_list_str, points_vec):
+					added_image = cv2.rectangle(added_image, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 0, 0), 1)
+					added_image = cv2.putText(added_image, label, (bbox[0], bbox[1]-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0))
+				
+				if chosen_class in label_list_int:
+					chosen_class_index = label_list_int.index(chosen_class)
+					chosen_points_vec = points_vec[chosen_class_index]
+					chosen_label_list_str = label_list_str[chosen_class_index]
 
-				added_image = cv2.rectangle(added_image, (choosed_points_vec[0], choosed_points_vec[1]), (choosed_points_vec[2], choosed_points_vec[3]), (0, 255, 0), 1)
-				added_image = cv2.putText(added_image, choosed_label_list_str, (choosed_points_vec[0], choosed_points_vec[1]-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0))
+					added_image = cv2.rectangle(added_image, (chosen_points_vec[0], chosen_points_vec[1]), (chosen_points_vec[2], chosen_points_vec[3]), (0, 255, 0), 1)
+					added_image = cv2.putText(added_image, chosen_label_list_str, (chosen_points_vec[0], chosen_points_vec[1]-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0))
 
-			plt.imshow(added_image)
-			self.fig.canvas.draw()
-			self.receive_bb = False
+				added_image = cv2.cvtColor(added_image, cv2.COLOR_RGB2BGR)
+				cv2.imshow('Random image', added_image)
+				a = cv2.waitKey(1) # close window when ESC is pressed 
+				self.receive_bb = False
+		cv2.destroyAllWindows()
 
 if __name__ == "__main__":
 	plt_imgs = plot_images()
 
 	while not rospy.is_shutdown():
-		# plt_imgs.plot_images_overlapped()
-		plt_imgs.plot_depth_position()
+		plt_imgs.plot_images_overlapped()
+		# plt_imgs.plot_depth_position()
 		
 
 
