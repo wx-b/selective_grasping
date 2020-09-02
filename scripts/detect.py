@@ -14,7 +14,7 @@ import argparse
 
 # ROS related
 import rospy
-from std_msgs.msg import Int32MultiArray, Float32MultiArray, Bool # String
+from std_msgs.msg import Int32MultiArray, Float32MultiArray, Bool, Int8 # String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import rospkg
@@ -68,6 +68,7 @@ class Detector(object):
 		
 		# Subscribe to the image published in Gazebo
 		rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback, queue_size=10)
+		rospy.Subscriber("pipeline/required_class", Int8, self.chosen_class_callback, queue_size=10)
 		if not args.gazebo:
 			camera_topic = rospy.get_param("/GGCNN/camera_topic_realsense")
 		else:
@@ -123,7 +124,7 @@ class Detector(object):
 		self.depth_img_height = 480
 		self.depth_img_width = 640
 
-		self.chosen_class = 0 # <<<< JUST FOR TEST
+		self.chosen_class = False
 		self.receive_bb_status = False # Indicates if the 
 
 	def filter_predictions(self, bounding_boxes, scores, class_IDs):
@@ -140,6 +141,10 @@ class Detector(object):
 	def image_callback(self, color_msg):
 		color_img = self.bridge.imgmsg_to_cv2(color_msg)
 		self.color_img = color_img
+	
+	def chosen_class_callback(self, msg):
+		self.chosen_class = msg.data
+		print('class: ', self.classes[self.chosen_class])
 
 	def resize_bounding_boxes(self, bounding_box):
 		"""
@@ -216,6 +221,13 @@ class Detector(object):
 					fscores_list.append(fscores[class_index])
 					fclass_IDs_list.append(fclass_IDs[class_index])
 					
+				max_score = max(fscores_list)
+				largest_score_bb_index = [i for i, x in enumerate(fscores_list) if x == max_score]
+				
+				bbox_list = [bbox_list[largest_score_bb_index[0]]]
+				fscores_list = [fscores_list[largest_score_bb_index[0]]]
+				fclass_IDs_list = [fclass_IDs_list[largest_score_bb_index[0]]]
+
 				bbox_list = self.resize_bounding_boxes(bbox_list)
 				self.labels = fclass_IDs_list
 				self.bboxes = bbox_list
@@ -248,18 +260,11 @@ class Detector(object):
 
 						ggcnn_center_area = depth_image[GGCNN_area_center[1], GGCNN_area_center[0]]
 						
-						# print('dist_x: ', dist_x)
-						# print('dist_y: ', dist_y)
 						self.horizontal_FOV = 52
 						self.vertical_FOV = 60
-						# print('H_FOV', self.horizontal_FOV)
-						# print('V_FOV', self.vertical_FOV)
-						
+												
 						largura_2 = 2.0 * ggcnn_center_area * np.tan(self.horizontal_FOV * abs(dist_x) / depth_width_res / 2.0 / 180.0 * np.pi) / 1000 * dist_x_dir
 						altura_2 = 2.0 * ggcnn_center_area * np.tan(self.vertical_FOV * abs(dist_y) / depth_height_res / 2.0 / 180.0 * np.pi) / 1000 * dist_y_dir
-
-						# print('largura_2: ', largura_2)
-						# print('altura_2: ', altura_2)
 
 						reposition_points = Float32MultiArray()
 						reposition_points.data = [largura_2, altura_2]
@@ -268,11 +273,11 @@ class Detector(object):
 						self.detection_ready.publish(True)
 						self.reposition_robot_flag.publish(True)
 			else:
-				print('The requested obj was not found')
+				print('The object ({}) was not found'.format(self.classes[self.chosen_class]))
 				self.detection_ready.publish(False)
 				self.reposition_robot_flag.publish(False)
 		else:
-			print('No object was found')
+			print('No objects (including the requested one ({})) were found'.format(self.classes[self.chosen_class]))
 			self.detection_ready.publish(False)
 			self.reposition_robot_flag.publish(False)
 
@@ -326,7 +331,7 @@ def main():
 
 	obj_detect = Detector(params, 
 						  model_name='ssd_512_resnet50_v1_voc', 
-						  ctx='gpu', 
+						  ctx='cpu', 
 						  filter_threshold=0.8, 
 						  nms_thresh=0.5)
 
