@@ -1,5 +1,6 @@
 crop_size: 300
-FOV: 62 # 55 for simulated / 
+FOV: 62 # 55 for simulated /
+vertical_FOV: 70
 camera_topic_info: "/camera/depth/camera_info"
 camera_topic: "/camera/depth/image_raw"
 camera_topic_realsense: "/camera/depth/image_rect_raw"

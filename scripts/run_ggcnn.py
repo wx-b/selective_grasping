@@ -87,13 +87,13 @@ class ssgg_grasping(object):
 		self.depth_pub_shot = rospy.Publisher('ggcnn/img/depth_shot', Image, queue_size=1) # Image taken 
 		self.ang_pub = rospy.Publisher('ggcnn/img/ang', Image, queue_size=1) # Gripper angle
 		self.cmd_pub = rospy.Publisher('ggcnn/out/command', Float32MultiArray, queue_size=1) # Command sent to robot
-		self.string_pub = rospy.Publisher('detecting_obj', String, queue_size=1)
+		self.grasp_ready = rospy.Publisher('flags/grasp_ready', Bool, queue_size=1) # grasp ready flag
 
 		# Subscribers
 		rospy.Subscriber(camera_topic, Image, self.get_depth_callback, queue_size=10)
 		rospy.Subscriber('bb_points_array', Int32MultiArray, self.bounding_boxes_callback, queue_size=10)
 		rospy.Subscriber('label_array', Int32MultiArray, self.labels_callback, queue_size=10)
-		rospy.Subscriber('detection_ready', Bool, self.detection_ready_callback ,queue_size=1) # Detection node detected something and is asking to generate a grasp pose
+		rospy.Subscriber('flags/detection_ready', Bool, self.detection_ready_callback ,queue_size=1) # Detection node detected something and is asking to generate a grasp pose
 		
 		# Initialize some var
 		self.depth_crop = None
@@ -109,8 +109,6 @@ class ssgg_grasping(object):
 		self.grasping_point = []
 		self.points_vec = []
 		self.cropped = None # Depth raw image 
-		self.offset_ = 10 # Increase the bounding box size
-		self.center_calibrated_point = np.array([312, 240]) # x, y
 		self.max_pixel = np.array([150, 150])
 		self.max_pixel_reescaled = np.array([150, 150])
 
@@ -147,36 +145,18 @@ class ssgg_grasping(object):
 		self.receive_lb = True
 		
 	def bounding_boxes_callback(self, msg):        
-		center_calibrated_point = self.center_calibrated_point
-		box_number = len(msg.data) / 4
-		
+		box_number = len(msg.data) / 4		
 		box_points = list(msg.data)
 		
 		i, index_inf, index_sup = 0, 0, 4
 		points_vec = []
-		offset = self.offset_
-		K = 0.2
 		
-		# Adjust the RGB B.B.C. (Bounding Box Coordinates) to the Depth image B.B.C.
 		while i < box_number:
 			# Get each one of the 4 coordinates of each bounding box
 			points_from_box = box_points[index_inf: index_sup]
 
-			if args.gazebo:
-				# Since we don't have the RGB image and depth aligned, we need to 
-				# adjust the bounding box location from the RGB image to the depth image manually
-				center = ((points_from_box[0] + points_from_box[2])/2, (points_from_box[1] + points_from_box[3])/2)
-				dist = [int(center[0] - center_calibrated_point[0]), int(center[1] - center_calibrated_point[1])]
-				final_distance = [int(dist[0]*K), int(dist[1]*K)]
-				start_point = (points_from_box[0] + final_distance[0] - offset, points_from_box[1] + final_distance[1] - offset)
-				end_point = (points_from_box[2] + final_distance[0] + offset, points_from_box[3] + final_distance[1] + offset)
-				
-				# The new adjusted bounding box coordinates 
-				bb_coordinates = [start_point[0], start_point[1], end_point[0], end_point[1]]
-			else:
-				# If we are using the realsense D435, we don't need to correct the aligment between the RGB
-				# and the Depth image
-				bb_coordinates = [points_from_box[0], points_from_box[1], points_from_box[2], points_from_box[3]]
+			# The bounding box coordinate is corrected in the detection node
+			bb_coordinates = [points_from_box[0], points_from_box[1], points_from_box[2], points_from_box[3]]
 
 			points_vec.append(bb_coordinates)
 			index_inf += 4
@@ -192,7 +172,9 @@ class ssgg_grasping(object):
 		self.depth_image_shot_raw.header = self.depth_message.header    
 
 	def copy_obj_to_depth_img(self):
-		if self.receive_lb:
+		print('Detection ready status: ', self.detection_ready_status)
+		self.grasp_ready.publish(False)
+		if self.receive_lb and self.detection_ready_status:
 			label_list_int = self.label_list_int
 			if self.receive_bb and (self.chosen_class in label_list_int):
 				points_vec = self.points_vec			
@@ -223,12 +205,10 @@ class ssgg_grasping(object):
 					# Publish the raw depth image shot taken at the beginning
 					self.depth_pub_shot.publish(self.depth_image_shot_raw)
 					# Publish the state of the detection
-					self.string_pub.publish('detected')
-				
+					
 				self.receive_bb = False
 				self.receive_lb = False
 				return number_of_boxes
-		self.string_pub.publish('not_detected')
 
 	def depth_process_ggcnn(self):
 		if args.gazebo:
@@ -382,6 +362,7 @@ class ssgg_grasping(object):
 							rospy.Time.now(),
 							"object_detected",
 							"camera_depth_optical_frame")
+		self.grasp_ready.publish(True)
 
 def main():
 	grasp_detection = ssgg_grasping()
@@ -394,7 +375,7 @@ def main():
 	raw_input("Press enter to start the GGCNN")
 	# rate = rospy.Rate(120)
 	rospy.loginfo("Starting process")
-	rate = rospy.Rate(1)
+	rate = rospy.Rate(4)
 	while not rospy.is_shutdown():
 		if args.gazebo:
 			number_of_boxes = grasp_detection.copy_obj_to_depth_img()

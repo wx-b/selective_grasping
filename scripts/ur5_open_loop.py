@@ -10,7 +10,7 @@ import rosservice
 import sys
 import re
 
-from std_msgs.msg import Float64MultiArray, Float32MultiArray, String
+from std_msgs.msg import Float64MultiArray, Float32MultiArray, String, Bool
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal, JointTolerance
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -38,7 +38,7 @@ def parse_args():
 
 args = parse_args()
 
-class vel_control(object):
+class ur5_grasp_project(object):
 	def __init__(self, joint_values = None):
 		rospy.init_node('command_GGCNN_ur5')
 		self.joint_values_home = joint_values
@@ -50,9 +50,9 @@ class vel_control(object):
 
 		# actionClient used to send joint positions
 		self.client = actionlib.SimpleActionClient('pos_based_pos_traj_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
-		print "Waiting for server (pos_based_pos_traj_controller)..."
+		print("Waiting for server (pos_based_pos_traj_controller)...")
 		self.client.wait_for_server()
-		print "Connected to server (pos_based_pos_traj_controller)"
+		print("Connected to server (pos_based_pos_traj_controller)")
 
 		self.picking = False # Tells the node that the object must follow the gripper
 		
@@ -81,9 +81,9 @@ class vel_control(object):
 			self.contactState_right = ContactState()
 
 			self.client_gripper = actionlib.SimpleActionClient('gripper_controller_pos/follow_joint_trajectory', FollowJointTrajectoryAction)
-			print "Waiting for server (gripper_controller_pos)..."
+			print("Waiting for server (gripper_controller_pos)...")
 			self.client_gripper.wait_for_server()
-			print "Connected to server (gripper_controller_pos)"
+			print("Connected to server (gripper_controller_pos)")
 			
 		# GGCNN
 		self.posCB = []
@@ -105,7 +105,13 @@ class vel_control(object):
 
 		# Topic published from GG-CNN Node
 		rospy.Subscriber('ggcnn/out/command', Float32MultiArray, self.ggcnn_command_callback, queue_size=1)
-		rospy.Subscriber("detecting_obj", String, self.obj_detection_callback, queue_size=1)
+
+		# Topics related to the new grasping pipeline
+		rospy.Subscriber('flags/grasp_ready', Bool, self.grasp_ready_callback, queue_size=1) # Grasp flag
+		rospy.Subscriber('flags/reposition_robot_flag', Bool, self.reposition_robot_callback, queue_size=1) # Reposition flag
+		rospy.Subscriber('flags/detection_ready', Bool, self.detection_ready_callback ,queue_size=1) # Detection flag
+		rospy.Subscriber('reposition_coord', Float32MultiArray, self.reposition_coord_callback, queue_size=1)
+		self.grasp_flag = False
 				
 		# Robotiq control
 		self.pub_gripper_command = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=1)
@@ -123,10 +129,19 @@ class vel_control(object):
 
 	def turn_gripper_position_controller_on(self):
 		self.controller_switch(['gripper_controller_pos'], ['gripper_controller_vel'], 1)
-	
-	def obj_detection_callback(self, msg):
-		self.detection_state = msg.data
 
+	def grasp_ready_callback(self, msg):
+		self.grasp_flag = msg.data
+	
+	def detection_ready_callback(self, detection_ready):
+		self.detection_ready_flag = detection_ready
+	
+	def reposition_robot_callback(self, msg):
+		self.reposition_robot_flag = msg.data
+	
+	def reposition_coord_callback(self, msg):
+		self.reposition_coords = msg.data
+	
 	def monitor_contacts_left_finger_callback(self, msg):
 		if msg.states:
 			self.left_collision = True
@@ -196,7 +211,7 @@ class vel_control(object):
 		"""
 		GGCNN Command Subscriber Callback
 		"""
-		if self.detection_state == 'detected':
+		if self.grasp_flag:
 			self.tf.waitForTransform("base_link", "object_detected", rospy.Time.now(), rospy.Duration(4.0))
 			object_pose, object_ori = self.tf.lookupTransform("base_link", "object_detected", rospy.Time(0))
 			self.d = list(msg.data)
@@ -357,11 +372,11 @@ class vel_control(object):
 		"""
 
 		error = np.sum([(self.actual_position[i] - goal[i])**2 for i in range(6)])
-		rospy.loginfo("Waiting for trajectory.")
+		print("Waiting for trajectory.")
 		while not rospy.is_shutdown() and error > tolerance:
 			error = np.sum([(self.actual_position[i] - goal[i])**2 for i in range(6)])
 		if error < tolerance:
-			rospy.loginfo("Trajectory Suceeded.") # whithin the tolerance specified
+			print("Trajectory Suceeded.") # whithin the tolerance specified
 		else:
 			rospy.logerr("Trajectory aborted.")
 
@@ -449,7 +464,7 @@ class vel_control(object):
 		
 	def move_home_on_shutdown(self):
 		self.client.cancel_goal()
-		rospy.loginfo("Shutting down node...")
+		print("Shutting down node...")
 	
 	def grasp_main(self, point_init_home, depth_shot_point):
 		while not rospy.is_shutdown():
@@ -457,11 +472,14 @@ class vel_control(object):
 			# right grasp on the selected object (green point in the grasp image)
 			# just for safety
 			raw_input("==== Press enter start the grasping process!")
-			if self.detection_state == 'detected':
+			if self.grasp_flag and not self.reposition_robot_flag:
+				print('Moving to the grasping position...')
+				# print("Grasp flag: " + str(self.grasp_flag))
+				# print("Reposition robot flag: " + str( self.reposition_robot_flag))
 				self.traj_planner([], 'pregrasp', movement='fast')
-
+				
 				# It closes the gripper before approaching the object
-				# It prevents the gripper to collide with other objects when grasping
+				# It prevents the gripper to collide with other objects when grasping				
 				if args.gazebo:
 					self.gripper_send_position_goal(action='pre_grasp_angle')
 				else:
@@ -469,23 +487,23 @@ class vel_control(object):
 
 				# Generate the trajectory to the grasp position - BE CAREFUL!
 				self.traj_planner([], 'grasp', movement='slow')
-
-				rospy.loginfo("Picking object")
+				print("Picking object...")
+				
 				if args.gazebo:
 					self.gripper_send_position_goal(action='pick')
 					self.get_link_position_picking()
 				else:
 					raw_input("==== Press enter to close the gripper!")
 					self.command_gripper('c')
-
-				rospy.loginfo("Moving object to the bin")
+				print("Moving object to the bin...")
+				
 				# After a collision is detected, the arm will start the picking action
 				self.picking = True # Attach object
 				self.traj_planner([-0.45, 0.0, 0.15], movement='fast')
 				self.traj_planner([-0.45, -0.16, 0.15], movement='fast')
 				self.traj_planner([-0.45, -0.16, 0.08], movement='slow') # Be careful when approaching the bin
-
-				rospy.loginfo("Placing object")
+				print("Placing object...")
+				
 				# After the bin location is reached, the robot will place the object and move back
 				# to the initial position
 				self.picking = False # Detach object
@@ -496,16 +514,26 @@ class vel_control(object):
 					self.reset_link_name()
 				else:
 					self.command_gripper('o')
-				
-				rospy.loginfo("Moving back to home position")
+				print("Moving back to home position...")
 				self.traj_planner([-0.45, -0.16, 0.15], movement='fast')
 				self.traj_planner(point_init_home, movement='fast')
 				self.traj_planner(depth_shot_point, movement='slow')
+				print('Grasping finished')
+			elif self.detection_ready_flag and self.reposition_robot_flag:
+				print('Repositioning robot...')
+				self.tf.waitForTransform("base_link", "grasping_link", rospy.Time.now(), rospy.Duration(4.0))
+				eef_pose, _ = self.tf.lookupTransform("base_link", "grasping_link", rospy.Time(0))
+				
+				corrected_position = [eef_pose[0] - self.reposition_coords[1],
+									  eef_pose[1] + self.reposition_coords[0],
+									  eef_pose[2]]
+
+				self.traj_planner(corrected_position, movement='fast')
 			else:
-				rospy.loginfo('Please move the object so it can be detected!')
+				print('The grasp could not be generated and/or no reposition was requested. Please try again!')
 
 def main():
-	ur5_vel = vel_control()
+	ur5_vel = ur5_grasp_project()
 	point_init_home = [-0.37, 0.11, 0.15]
 	joint_values_home = ur5_vel.get_ik(point_init_home)
 	ur5_vel.joint_values_home = joint_values_home
@@ -526,10 +554,10 @@ def main():
 		ur5_vel.traj_planner(depth_shot_point, movement='fast')
 
 	if args.gazebo:
-		rospy.loginfo("Starting the gripper in Gazebo! Please wait...")
+		print("Starting the gripper in Gazebo! Please wait...")
 		ur5_vel.gripper_send_position_goal(0.4)
 	else:
-		rospy.loginfo("Starting the real gripper! Please wait...")
+		print("Starting the real gripper! Please wait...")
 		ur5_vel.command_gripper('r')
 		rospy.sleep(0.5)
 		ur5_vel.command_gripper('a')
@@ -541,4 +569,4 @@ if __name__ == '__main__':
 	try:
 		main()
 	except rospy.ROSInterruptException:
-		print "Program interrupted before completion"
+		print("Program interrupted before completion")

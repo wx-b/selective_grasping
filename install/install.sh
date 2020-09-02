@@ -15,6 +15,8 @@ sudo apt-get install ros-kinetic-effort-controllers
 sudo apt-get install ros-kinetic-position-controllers
 sudo apt-get install ros-kinetic-gazebo-ros-pkgs ros-kinetic-gazebo-ros-control
 
+pip install -U setuptools
+
 echo '###### Installing and upgrading pip | pathlib ######'
 sudo apt install python-pip
 pip install --upgrade pip
