@@ -95,6 +95,7 @@ class ssgg_grasping(object):
 		rospy.Subscriber('label_array', Int32MultiArray, self.labels_callback, queue_size=10)
 		rospy.Subscriber('flags/detection_ready', Bool, self.detection_ready_callback ,queue_size=1) # Detection node detected something and is asking to generate a grasp pose
 		rospy.Subscriber("pipeline/required_class", Int8, self.chosen_class_callback, queue_size=10)
+		self.chosen_class = 100
 
 		# Initialize some var
 		self.depth_crop = None
@@ -176,6 +177,7 @@ class ssgg_grasping(object):
 
 	def copy_obj_to_depth_img(self):
 		print('Detection ready status: ', self.detection_ready_status)
+		print('Receive_lb: ', self.receive_lb)
 		if self.receive_lb and self.detection_ready_status:
 			label_list_int = self.label_list_int
 			if self.receive_bb and (self.chosen_class in label_list_int):
@@ -212,8 +214,10 @@ class ssgg_grasping(object):
 				self.receive_lb = False
 				return number_of_boxes
 			else:
-				print('grasp: false')
 				self.grasp_ready.publish(False)
+		
+		if not self.detection_ready_status:
+			self.grasp_ready.publish(False)
 
 	def depth_process_ggcnn(self):
 		if args.gazebo:

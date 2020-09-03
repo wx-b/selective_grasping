@@ -331,7 +331,7 @@ def main():
 
 	obj_detect = Detector(params, 
 						  model_name='ssd_512_resnet50_v1_voc', 
-						  ctx='cpu', 
+						  ctx='gpu', 
 						  filter_threshold=0.8, 
 						  nms_thresh=0.5)
 
