@@ -477,7 +477,7 @@ class ur5_grasp_project(object):
 		if action == 'pre_grasp_angle':
 			max_distance = 0.085
 			angular_coeff = 0.11
-			K = 1.3
+			K = 1.1 # lower numbers = higher angles
 			angle = (max_distance - self.gripper_angle_grasp) / angular_coeff * K
 			position = angle
 			velocity = 0.4
@@ -506,124 +506,128 @@ class ur5_grasp_project(object):
 	def grasp_main(self, point_init_home, depth_shot_point):
 		random_classes = [i for i in range(len(self.classes))]
 
-		bin_location = [-0.65, -0.1, 0.2]
+		bin_location = [[-0.65, -0.1, 0.2],
+						[-0.65, 0.1, 0.2]]
 		garbage_location = [-0.4, -0.30, 0.10]
 		
 		while not rospy.is_shutdown():
-			raw_input("==== go to bin location")
-			self.traj_planner(bin_location, movement='fast')
-
-			rospy.sleep(2.0) # waiting for the tag detections
-			print(self.detected_tags)
-
-			object_id_chosen = 1
-
-			selected_tag_status = self.detected_tags[object_id_chosen] # if the tag was detected or not
-			print('Selected tag status: ', selected_tag_status)
-			print('selected tag: ', self.tags[object_id_chosen])
-			if selected_tag_status:
-				self.tf.waitForTransform("base_link", self.tags[object_id_chosen], rospy.Time(0), rospy.Duration(2.0)) # rospy.Time.now()
-				ptFinal, oriFinal = self.tf.lookupTransform("base_link", self.tags[object_id_chosen], rospy.Time(0))
-				ptFinal = [ptFinal[i] + self.tags_position_offset[i] for i in range(3)]
-				
-				raw_input("==== go to tag")	
-				self.traj_planner(ptFinal, movement='fast')
-			else:
-				print('> Could not find the box tag. Placing the object anywhere \n')
-				self.traj_planner(garbage_location, movement='fast')
-
-			raw_input("==== go home")
-			self.traj_planner(point_init_home, movement='fast')
-
-
-
-
-
-			# print('\n')
-			# # The grasp is performed randomly and the chosen object is published to
-			# # the detection node
-			# if not len(random_classes):
-			# 	print('> There is no object remaining in the workspace. Resetting the objects list...')
-			# 	random_classes = [i for i in range(len(self.classes))]
+			print('\n')
+			# The grasp is performed randomly and the chosen object is published to
+			# the detection node
+			if not len(random_classes):
+				print('> There is no object remaining in the workspace. Resetting the objects list...')
+				random_classes = [i for i in range(len(self.classes))]
 			
-			# random_object = random.sample(random_classes, 1)[0]
-			# random_classes.pop(random_classes.index(random_object))
-			# print('> Object to pick: ', self.classes[random_object])
+			random_object_id = random.sample(random_classes, 1)[0]
+			random_classes.pop(random_classes.index(random_object_id))
+			print('> Object to pick: ', self.classes[random_object_id])
 				
-			# self.require_class.publish(random_object)
+			self.require_class.publish(random_object_id)
 
-			# # Before pressing ENTER you should observe if the GG-CNN is getting the
-			# # right grasp on the selected object (green point in the grasp image)
-			# # just for safety
-			# raw_input("==== Press enter to start the grasping process!")
+			# Before pressing ENTER you should observe if the GG-CNN is getting the
+			# right grasp on the selected object (green point in the grasp image)
+			# just for safety
+			raw_input("==== Press enter to start the grasping process!")
 
-			# if self.detection_ready_flag:
-			# 	if self.reposition_robot_flag:
-			# 		print('repos flag: ', self.reposition_robot_flag)
-			# 		print('> Repositioning robot...')
-			# 		self.tf.waitForTransform("base_link", "grasping_link", rospy.Time.now(), rospy.Duration(4.0))
-			# 		eef_pose, _ = self.tf.lookupTransform("base_link", "grasping_link", rospy.Time(0))
+			if self.detection_ready_flag:
+				if self.reposition_robot_flag:
+					print('repos flag: ', self.reposition_robot_flag)
+					print('> Repositioning robot...')
+					self.tf.waitForTransform("base_link", "grasping_link", rospy.Time.now(), rospy.Duration(4.0))
+					eef_pose, _ = self.tf.lookupTransform("base_link", "grasping_link", rospy.Time(0))
 					
-			# 		corrected_position = [eef_pose[0] - self.reposition_coords[1],
-			# 							  eef_pose[1] + self.reposition_coords[0],
-			# 							  eef_pose[2]]
+					corrected_position = [eef_pose[0] - self.reposition_coords[1],
+										  eef_pose[1] + self.reposition_coords[0],
+										  eef_pose[2]]
 	
-			# 		self.traj_planner(corrected_position, movement='fast')			
-			# 		raw_input("==== Press enter when the trajectory finishes!")
+					self.traj_planner(corrected_position, movement='fast')			
+					raw_input("==== Press enter when the trajectory finishes!")
 							
-			# 	if self.grasp_flag and self.detection_ready_flag and not self.reposition_robot_flag:
-			# 		print('> Moving to the grasping position... \n')
-			# 		# print("Grasp flag: " + str(self.grasp_flag))
-			# 		# print("Reposition robot flag: " + str( self.reposition_robot_flag))
-			# 		self.traj_planner([], 'pregrasp', movement='fast')
+				if self.grasp_flag and self.detection_ready_flag and not self.reposition_robot_flag:
+					print('> Moving to the grasping position... \n')
+					# print("Grasp flag: " + str(self.grasp_flag))
+					# print("Reposition robot flag: " + str( self.reposition_robot_flag))
+					self.traj_planner([], 'pregrasp', movement='fast')
 					
-			# 		# It closes the gripper before approaching the object
-			# 		# It prevents the gripper to collide with other objects when grasping				
-			# 		if args.gazebo:
-			# 			self.gripper_send_position_goal(action='pre_grasp_angle')
-			# 		else:
-			# 			self.command_gripper('p')
+					# It closes the gripper before approaching the object
+					# It prevents the gripper to collide with other objects when grasping				
+					if args.gazebo:
+						self.gripper_send_position_goal(action='pre_grasp_angle')
+					else:
+						self.command_gripper('p')
 
-			# 		# Moving the robot to pick the object - BE CAREFULL!
-			# 		self.traj_planner([], 'grasp', movement='slow')
+					# Moving the robot to pick the object - BE CAREFULL!
+					self.traj_planner([], 'grasp', movement='slow')
 					
-			# 		# print("Picking object...")				
-			# 		# if args.gazebo:
-			# 		# 	self.gripper_send_position_goal(action='pick')
-			# 		# 	self.get_link_position_picking()
-			# 		# else:
-			# 		# 	raw_input("==== Press enter to close the gripper!")
-			# 		# 	self.command_gripper('c')
+					# print("Picking object...")				
+					# if args.gazebo:
+					# 	self.gripper_send_position_goal(action='pick')
+					# 	self.get_link_position_picking()
+					# else:
+					# 	raw_input("==== Press enter to close the gripper!")
+					# 	self.command_gripper('c')
 					
-			# 		# print("Moving object to the bin...")				
-			# 		# # After a collision is detected, the arm will start the picking action
-			# 		# self.picking = True # Attach object
-			# 		self.traj_planner(bin_location, movement='fast')
-			# 		raw_input("==== Continue!")
-			# 		# print("Placing object...")
-					
-			# 		# # After the bin location is reached, the robot will place the object and move back
-			# 		# # to the initial position
-			# 		# self.picking = False # Detach object
-			# 		# if args.gazebo:
-			# 		# 	self.gripper_send_position_goal(0.3)
-			# 		# 	# Not working anymore - need to investigate
-			# 		# 	# self.delete_model_service_method() 
-			# 		# 	self.reset_link_name()
-			# 		# else:
-			# 		# 	self.command_gripper('o')
+					print("Moving object to the bin...")				
+					# After a collision is detected, the arm will start the picking action
+					# self.picking = True # Attach object
+					raw_input("==== go to bin location")
 
-			# 		print("> Moving back to home position...\n")
-			# 		# self.traj_planner([-0.45, -0.16, 0.15], movement='fast')
-			# 		self.traj_planner(point_init_home, movement='fast')
-			# 		self.traj_planner(depth_shot_point, movement='slow')
-			# 		print('> Grasping finished \n')
-			# 	else:
-			# 		print('> The requested object could not be grasped! \n')
-			# 		self.traj_planner(depth_shot_point, movement='fast')
+					if random_object_id < 5:
+						self.traj_planner(bin_location[0], movement='fast')
+					else:
+						self.traj_planner(bin_location[1], movement='fast')
 
-			# else:
-			# 	print('> The requested object was not detected! \n')
+					rospy.sleep(2.0) # waiting for the tag detections
+					number_of_detected_tags = sum(self.detected_tags)			
+
+					if number_of_detected_tags:
+						selected_tag_status = self.detected_tags[random_object_id] # if the tag was detected or not
+						print('Selected tag status: ', selected_tag_status)
+						print('selected tag: ', self.tags[random_object_id])
+						if selected_tag_status:
+							self.tf.waitForTransform("base_link", self.tags[random_object_id], rospy.Time(0), rospy.Duration(2.0)) # rospy.Time.now()
+							ptFinal, oriFinal = self.tf.lookupTransform("base_link", self.tags[random_object_id], rospy.Time(0))
+							ptFinal = [ptFinal[i] + self.tags_position_offset[i] for i in range(3)]
+
+							raw_input("==== go to tag")	
+							self.traj_planner(ptFinal, movement='fast')
+						else:
+							# In this case, the camera identifies some other tag but not the tag corresponding
+							# to the object in case
+							print('> Could not find the box tag. Placing the object anywhere \n')
+							raw_input('=== Pres enter to proceed')
+							self.traj_planner(garbage_location, movement='fast')
+					else:
+						# In this case, the robot cannot find any tag
+						print('> Could not find any tag. Placing the object anywhere \n')
+						raw_input('=== Pres enter to proceed')
+						self.traj_planner(garbage_location, movement='fast')
+
+					raw_input("==== Continue!")
+
+					# print("Placing object...")					
+					# # After the bin location is reached, the robot will place the object and move back
+					# # to the initial position
+					# self.picking = False # Detach object
+					# if args.gazebo:
+					# 	self.gripper_send_position_goal(0.3)
+					# 	# Not working anymore - need to investigate
+					# 	# self.delete_model_service_method() 
+					# 	self.reset_link_name()
+					# else:
+					# 	self.command_gripper('o')
+
+					print("> Moving back to home position...\n")
+					# self.traj_planner([-0.45, -0.16, 0.15], movement='fast')
+					self.traj_planner(point_init_home, movement='fast')
+					self.traj_planner(depth_shot_point, movement='slow')
+					print('> Grasping finished \n')
+				else:
+					print('> The requested object could not be grasped! \n')
+					self.traj_planner(depth_shot_point, movement='fast')
+
+			else:
+				print('> The requested object was not detected! \n')
 				
 def main():
 	ur5_vel = ur5_grasp_project()
@@ -632,16 +636,16 @@ def main():
 	ur5_vel.joint_values_home = joint_values_home
 
 	# Send the robot to the custom HOME position
-	# raw_input("==== Press enter to 'home' the robot!")
+	raw_input("==== Press enter to 'home' the robot!")
 	rospy.on_shutdown(ur5_vel.move_home_on_shutdown)
-	# ur5_vel.traj_planner(point_init_home, movement='fast')
+	ur5_vel.traj_planner(point_init_home, movement='fast')
 
 	depth_shot_point = [-0.37, 0.11, 0.05]
 
-	# if not args.ggcnn:
+	if not args.ggcnn:
 		# Remove all objects from the scene and press enter
-		# raw_input("==== Press enter to move the robot to the 'depth cam shot' position!")
-		# ur5_vel.traj_planner(depth_shot_point, movement='fast')
+		raw_input("==== Press enter to move the robot to the 'depth cam shot' position!")
+		ur5_vel.traj_planner(depth_shot_point, movement='fast')
 
 	if args.gazebo:
 		print("Starting the gripper in Gazebo! Please wait...")
