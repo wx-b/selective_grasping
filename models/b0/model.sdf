@@ -1,0 +1,48 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="Custom box">
+    <static>true</static>
+    <link name="box_link">
+
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>model://b0/meshes/b0.dae</uri>
+            <scale>1.0 1.0 1.0</scale>
+          </mesh>
+        </geometry>
+        <pose>0 0 0.016 0 0 0</pose>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://b0/meshes/b0.dae</uri>
+            <scale>1.0 1.0 1.0</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <uri>model://b0/materials/scripts</uri>
+            <uri>model://b0/materials/textures</uri>
+            <name>B0/Diffuse</name>
+          </script>
+        </material>
+      </visual>
+
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0.1</ixy>
+          <ixz>0.1</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0.1</iyz>
+          <izz>0.1</izz>
+        </inertia>
+        <mass>0.14</mass>
+      </inertial>
+
+    </link>
+  </model>
+</sdf>
