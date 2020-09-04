@@ -1,14 +1,14 @@
 <?xml version="1.0" ?>
 <sdf version="1.5">
-  <model name="Custom box">
+  <model name="box_b6">
     <static>true</static>
-    <link name="box_link">
+    <link name="box_b6_link">
 
       <collision name="collision">
         <geometry>
           <mesh>
             <uri>model://b6/meshes/b6.dae</uri>
-            <scale>1.0 1.0 1.0</scale>
+            <scale>0.6 0.6 0.6</scale>
           </mesh>
         </geometry>
         <pose>0 0 0.016 0 0 0</pose>
@@ -18,7 +18,7 @@
         <geometry>
           <mesh>
             <uri>model://b6/meshes/b6.dae</uri>
-            <scale>1.0 1.0 1.0</scale>
+            <scale>0.6 0.6 0.6</scale>
           </mesh>
         </geometry>
         <material>

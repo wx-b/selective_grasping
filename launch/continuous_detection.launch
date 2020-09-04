@@ -18,6 +18,6 @@
     <param name="publish_tag_detections_image" type="bool" value="true" />      <!-- default: false -->
   </node>
 
-  <!-- Node responsible for publishing the tf frame for each tag -->
+  <!-- Node responsible for re-publishing the tf frame for each tag -->
   <node pkg="selective_grasping" type="april_tag_tf_generator.py" name="april_tag_tf_generator_node"/>
 </launch>
