@@ -12,7 +12,7 @@ import re
 import random
 
 # ROS Msgs
-from std_msgs.msg import Float64MultiArray, Float32MultiArray, String, Bool, Int8
+from std_msgs.msg import Int16MultiArray, Float64MultiArray, Float32MultiArray, String, Bool, Int8
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal, JointTolerance
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -35,6 +35,7 @@ def parse_args():
 	parser = argparse.ArgumentParser(description='AAPF_Orientation')
 	parser.add_argument('--gazebo', action='store_true', help='Set the parameters related to the simulated enviroonment in Gazebo')
 	parser.add_argument('--ggcnn', action='store_true', help='run only the ggcnn')
+	parser.add_argument('--place', action='store_true', help='run only if you want to place the objects based on the tags')
 	args = parser.parse_args()
 	return args
 
@@ -122,7 +123,12 @@ class ur5_grasp_project(object):
 		rospy.Subscriber('flags/reposition_robot_flag', Bool, self.reposition_robot_callback, queue_size=1) # Reposition flag
 		rospy.Subscriber('flags/detection_ready', Bool, self.detection_ready_callback ,queue_size=1) # Detection flag
 		rospy.Subscriber('reposition_coord', Float32MultiArray, self.reposition_coord_callback, queue_size=1)
+		rospy.Subscriber('/selective_grasping/tag_detections', Int16MultiArray, self.tags_callback, queue_size=1)
+
+		self.tags = ['tag_0', 'tag_1', 'tag_2', 'tag_3', 'tag_4', 'tag_5', 'tag_6', 'tag_7']
+
 		self.grasp_flag = False
+		self.detected_tags = []
 
 		self.require_class = rospy.Publisher('pipeline/required_class', Int8, queue_size=1)
 				
@@ -145,6 +151,9 @@ class ur5_grasp_project(object):
 	def turn_gripper_position_controller_on(self):
 		self.controller_switch(['gripper_controller_pos'], ['gripper_controller_vel'], 1)
 
+	def tags_callback(self, msg):
+		self.detected_tags = msg.data
+	
 	def grasp_ready_callback(self, msg):
 		self.grasp_flag = msg.data
 	
@@ -483,6 +492,8 @@ class ur5_grasp_project(object):
 	
 	def grasp_main(self, point_init_home, depth_shot_point):
 		random_classes = [i for i in range(len(self.classes))]
+
+		bin_location = [-0.55, 0.0, 0.2]
 		
 		while not rospy.is_shutdown():
 			print('\n')
@@ -530,7 +541,7 @@ class ur5_grasp_project(object):
 					else:
 						self.command_gripper('p')
 
-					# Generate the trajectory to the grasp position - BE CAREFUL!
+					# Moving the robot to pick the object - BE CAREFULL!
 					self.traj_planner([], 'grasp', movement='slow')
 					
 					# print("Picking object...")				
@@ -544,9 +555,8 @@ class ur5_grasp_project(object):
 					# print("Moving object to the bin...")				
 					# # After a collision is detected, the arm will start the picking action
 					# self.picking = True # Attach object
-					# self.traj_planner([-0.45, 0.0, 0.15], movement='fast')
-					# self.traj_planner([-0.45, -0.16, 0.15], movement='fast')
-					# self.traj_planner([-0.45, -0.16, 0.08], movement='slow') # Be careful when approaching the bin
+					self.traj_planner(bin_location, movement='fast')
+					raw_input("==== Continue!")
 					# print("Placing object...")
 					
 					# # After the bin location is reached, the robot will place the object and move back

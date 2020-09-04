@@ -1,0 +1,48 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="plane_tag">
+    <static>true</static>
+    <link name="plane_tag_link">
+
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>model://plane_tag/meshes/plane_tag.dae</uri>
+            <scale>1.0 1.0 1.0</scale>
+          </mesh>
+        </geometry>
+        <pose>0 0 0.016 0 0 0</pose>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://plane_tag/meshes/plane_tag.dae</uri>
+            <scale>1.0 1.0 1.0</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <uri>model://plane_tag/materials/scripts</uri>
+            <uri>model://plane_tag/materials/textures</uri>
+            <name>plane_tag/Diffuse</name>
+          </script>
+        </material>
+      </visual>
+
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0.1</ixy>
+          <ixz>0.1</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0.1</iyz>
+          <izz>0.1</izz>
+        </inertia>
+        <mass>0.14</mass>
+      </inertial>
+
+    </link>
+  </model>
+</sdf>

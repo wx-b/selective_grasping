@@ -39,12 +39,17 @@ class spawn_objects():
 if __name__ == '__main__':
 	spawn_obj = spawn_objects()
 
-	object_path = '/models/box/model.sdf'
-	ptFinal = [-0.1, -0.5, 0.019762]
-	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
-	spawn_obj.spawning('box', object_path, ptFinal, oriFinal)
+	# object_path = '/models/box/model.sdf'
+	# ptFinal = [-0.1, -0.5, 0.019762]
+	# oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	# spawn_obj.spawning('box', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/box/model.sdf'
-	ptFinal = [-0.3, -0.5, 0.019762]
+	object_path = '/models/plane_tag/model.sdf'
+	ptFinal = [-0.0163, -0.654, 0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
-	spawn_obj.spawning('box2', object_path, ptFinal, oriFinal)
+	spawn_obj.spawning('plane_tag', object_path, ptFinal, oriFinal)
+
+	object_path = '/models/plane_tag2/model.sdf'
+	ptFinal = [-0.155, -0.654, 0.005]
+	oriFinal = quaternion_from_euler(0.0, 0.0, 0.0)
+	spawn_obj.spawning('plane_tag2', object_path, ptFinal, oriFinal)

@@ -1,0 +1,17 @@
+standalone_tags:
+  [
+    {id: 0, size: 0.095},
+    {id: 1, size: 0.095},
+  ]
+
+tag_bundles:
+  [
+    # {
+    #   name: 'id_1',
+    #   layout:
+    #     [
+    #       {id: 0, size: 0.12, x: 0.00, y: 0.0000, z: 0.0, qw: 1.0, qx: 0.0, qy: 0.0, qz: 0.0},
+    #       {id: 1, size: 0.12, x: 0.12, y: 0.0000, z: 0.0, qw: 1.0, qx: 0.0, qy: 0.0, qz: 0.0}
+    #     ]
+    # }
+  ]

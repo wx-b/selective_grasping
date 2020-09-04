@@ -23,7 +23,7 @@ import rospkg
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo, JointState
 from std_msgs.msg import Float32MultiArray, Int32MultiArray, String, Bool, Int8
-from tf.transformations import quaternion_from_euler, euler_from_quaternion
+from tf.transformations import quaternion_from_euler
 from std_msgs.msg import String
 
 def parse_args():
