@@ -90,6 +90,7 @@ class ur5_grasp_project(object):
 			self.client_gripper.wait_for_server()
 			print("Connected to server (gripper_controller_pos)")
 			
+			
 		#################
 		# GGCNN Related #
 		#################
@@ -125,7 +126,11 @@ class ur5_grasp_project(object):
 		rospy.Subscriber('reposition_coord', Float32MultiArray, self.reposition_coord_callback, queue_size=1)
 		rospy.Subscriber('/selective_grasping/tag_detections', Int16MultiArray, self.tags_callback, queue_size=1)
 
-		self.tags = ['tag_0', 'tag_1', 'tag_2', 'tag_3', 'tag_4', 'tag_5', 'tag_6', 'tag_7']
+		self.tags = ['tag_0_corrected', 'tag_1_corrected', 'tag_2_corrected', 'tag_3_corrected', 
+				     'tag_4_corrected', 'tag_5_corrected', 'tag_6_corrected', 'tag_7_corrected']
+		
+		if args.gazebo:
+			self.tags_position_offset = [0.062, 0.0, 0.062]
 
 		self.grasp_flag = False
 		self.detected_tags = []
@@ -153,8 +158,7 @@ class ur5_grasp_project(object):
 
 	def tags_callback(self, msg):
 		self.detected_tags = msg.data
-		print(self.detected_tags)
-	
+
 	def grasp_ready_callback(self, msg):
 		self.grasp_flag = msg.data
 	
@@ -298,6 +302,8 @@ class ur5_grasp_project(object):
 		if sol is not None:
 			sol = list(sol)
 			sol[-1] = 0.0
+		else:
+			print("IK didn't return any solution")
 			
 		return sol
 
@@ -328,59 +334,65 @@ class ur5_grasp_project(object):
 			self.grasp_cartesian_pose = deepcopy(self.posCB)
 			self.grasp_cartesian_pose[-1] += offset_from_object
 			joint_pos = self.get_ik(self.grasp_cartesian_pose)
-			joint_pos[-1] = self.ori
-			self.final_orientation = deepcopy(self.ori)
-			self.gripper_angle_grasp = deepcopy(self.d[-2])
+			if joint_pos is not None:
+				joint_pos[-1] = self.ori
+				self.final_orientation = deepcopy(self.ori)
+				self.gripper_angle_grasp = deepcopy(self.d[-2])
 		elif grasp_step == 'grasp':
 			self.grasp_cartesian_pose[-1] -= offset_from_object
 			joint_pos = self.get_ik(self.grasp_cartesian_pose)
-			joint_pos[-1] = self.final_orientation
+			if joint_pos is not None:
+				joint_pos[-1] = self.final_orientation
 		elif grasp_step == 'move':
 			joint_pos = self.get_ik(cart_pos)
-			joint_pos[-1] = 0.0
-
-		if movement=='slow':
-			final_traj_duration = 500.0 # total iteractions
-		elif movement=='fast':
-			final_traj_duration = 350.0
-
-		v0 = a0 = vf = af = 0
-		t0 = 5.0
-		tf = (t0 + final_traj_duration) / way_points_number # tf by way point
-		t = tf / 10 # for each movement
-		ta = tf / 10 # to complete each movement
-		a = [0.0]*6
-		pos_points, vel_points, acc_points = [0.0]*6, [0.0]*6, [0.0]*6
+			if joint_pos is not None:
+				joint_pos[-1] = 0.0
 		
-		goal = self.__build_goal_message_ur5()
+		if joint_pos is not None:
+			if movement=='slow':
+				final_traj_duration = 500.0 # total iteractions
+			elif movement=='fast':
+				final_traj_duration = 350.0
 
-		for i in range(6):
-			q0 = self.actual_position[i]
-			qf = joint_pos[i]
+			v0 = a0 = vf = af = 0
+			t0 = 5.0
+			tf = (t0 + final_traj_duration) / way_points_number # tf by way point
+			t = tf / 10 # for each movement
+			ta = tf / 10 # to complete each movement
+			a = [0.0]*6
+			pos_points, vel_points, acc_points = [0.0]*6, [0.0]*6, [0.0]*6
+			
+			goal = self.__build_goal_message_ur5()
 
-			b = np.array([q0,v0,a0,qf,vf,af]).transpose()
-			m = np.array([[1, t0, t0**2,   t0**3,    t0**4,    t0**5],
-						  [0,  1,  2*t0, 3*t0**2,  4*t0**3,  5*t0**4],
-						  [0,  0,     2,    6*t0, 12*t0**2, 20*t0**3],
-						  [1, tf, tf**2,   tf**3,    tf**4,    tf**5],
-						  [0,  1,  2*tf, 3*tf**2,  4*tf**3,  5*tf**4],
-						  [0,  0,     2,    6*tf, 12*tf**2, 20*tf**3]])
-			a[i] = np.linalg.inv(m).dot(b)
+			for i in range(6):
+				q0 = self.actual_position[i]
+				qf = joint_pos[i]
 
-		for i in range(way_points_number):
-			for j in range(6):
-				pos_points[j] =   a[j][0] +   a[j][1]*t +    a[j][2]*t**2 +    a[j][3]*t**3 +   a[j][4]*t**4 + a[j][5]*t**5
-				vel_points[j] =   a[j][1] + 2*a[j][2]*t +  3*a[j][3]*t**2 +  4*a[j][4]*t**3 + 5*a[j][5]*t**4
-				acc_points[j] = 2*a[j][2] + 6*a[j][3]*t + 12*a[j][4]*t**2 + 20*a[j][5]*t**3
+				b = np.array([q0,v0,a0,qf,vf,af]).transpose()
+				m = np.array([[1, t0, t0**2,   t0**3,    t0**4,    t0**5],
+							[0,  1,  2*t0, 3*t0**2,  4*t0**3,  5*t0**4],
+							[0,  0,     2,    6*t0, 12*t0**2, 20*t0**3],
+							[1, tf, tf**2,   tf**3,    tf**4,    tf**5],
+							[0,  1,  2*tf, 3*tf**2,  4*tf**3,  5*tf**4],
+							[0,  0,     2,    6*tf, 12*tf**2, 20*tf**3]])
+				a[i] = np.linalg.inv(m).dot(b)
 
-			goal.trajectory.points.append(JointTrajectoryPoint(positions=pos_points,
-															   velocities=vel_points,
-															   accelerations=acc_points,
-															   time_from_start=rospy.Duration(t))) #default 0.1*i + 5
-			t += ta
+			for i in range(way_points_number):
+				for j in range(6):
+					pos_points[j] =   a[j][0] +   a[j][1]*t +    a[j][2]*t**2 +    a[j][3]*t**3 +   a[j][4]*t**4 + a[j][5]*t**5
+					vel_points[j] =   a[j][1] + 2*a[j][2]*t +  3*a[j][3]*t**2 +  4*a[j][4]*t**3 + 5*a[j][5]*t**4
+					acc_points[j] = 2*a[j][2] + 6*a[j][3]*t + 12*a[j][4]*t**2 + 20*a[j][5]*t**3
 
-		self.client.send_goal(goal)
-		self.all_close(joint_pos)
+				goal.trajectory.points.append(JointTrajectoryPoint(positions=pos_points,
+																velocities=vel_points,
+																accelerations=acc_points,
+																time_from_start=rospy.Duration(t))) #default 0.1*i + 5
+				t += ta
+
+			self.client.send_goal(goal)
+			self.all_close(joint_pos)
+		else:
+			print('Could not find a IK solution')
 		
 	
 	def all_close(self, goal, tolerance=0.00005):
@@ -494,15 +506,33 @@ class ur5_grasp_project(object):
 	def grasp_main(self, point_init_home, depth_shot_point):
 		random_classes = [i for i in range(len(self.classes))]
 
-		bin_location = [-0.68, -0.1, 0.2]
+		bin_location = [-0.65, -0.1, 0.2]
+		garbage_location = [-0.4, -0.30, 0.10]
 		
 		while not rospy.is_shutdown():
-			print(self.detected_tags)
-
-			raw_input("==== pt1")
+			raw_input("==== go to bin location")
 			self.traj_planner(bin_location, movement='fast')
 
-			raw_input("==== pt1")
+			rospy.sleep(2.0) # waiting for the tag detections
+			print(self.detected_tags)
+
+			object_id_chosen = 1
+
+			selected_tag_status = self.detected_tags[object_id_chosen] # if the tag was detected or not
+			print('Selected tag status: ', selected_tag_status)
+			print('selected tag: ', self.tags[object_id_chosen])
+			if selected_tag_status:
+				self.tf.waitForTransform("base_link", self.tags[object_id_chosen], rospy.Time(0), rospy.Duration(2.0)) # rospy.Time.now()
+				ptFinal, oriFinal = self.tf.lookupTransform("base_link", self.tags[object_id_chosen], rospy.Time(0))
+				ptFinal = [ptFinal[i] + self.tags_position_offset[i] for i in range(3)]
+				
+				raw_input("==== go to tag")	
+				self.traj_planner(ptFinal, movement='fast')
+			else:
+				print('> Could not find the box tag. Placing the object anywhere \n')
+				self.traj_planner(garbage_location, movement='fast')
+
+			raw_input("==== go home")
 			self.traj_planner(point_init_home, movement='fast')
 
 
