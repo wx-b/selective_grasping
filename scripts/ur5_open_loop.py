@@ -176,15 +176,15 @@ class ur5_grasp_project(object):
 			self.left_collision = True
 			string = msg.states[0].collision1_name
 			string_collision = re.findall(r'::(.+?)::',string)[0]
-			# print("Left String_collision: ", string_collision)
+			print("Left String_collision: ", string_collision)
 			if string_collision in self.finger_links:
 				string = msg.states[0].collision2_name
 				print("Left Real string (object): ", string)
 				self.string = re.findall(r'::(.+?)::', string)[0]
-				# print("Left before: ", self.string)
+				print("Left before: ", self.string)
 			else:
 				self.string = string_collision
-				# print("Left in else: ", string_collision)
+				print("Left in else: ", string_collision)
 		else:
 			self.left_collision = False
 
@@ -193,15 +193,15 @@ class ur5_grasp_project(object):
 			self.right_collision = True
 			string = msg.states[0].collision1_name
 			string_collision = re.findall(r'::(.+?)::',string)[0]
-			# print("Right String_collision: ", string_collision)
+			print("Right String_collision: ", string_collision)
 			if string_collision in self.finger_links:
 				string = msg.states[0].collision2_name
 				print("Right Real string (object): ", string)
 				self.string = re.findall(r'::(.+?)::',string)[0]
-				# print("Right before: ", self.string)
+				print("Right before: ", self.string)
 			else:
 				self.string = string_collision
-				# print("Right in else: ", self.string)
+				print("Right in else: ", self.string)
 		else:
 			self.right_collision = False
 
@@ -477,7 +477,7 @@ class ur5_grasp_project(object):
 		if action == 'pre_grasp_angle':
 			max_distance = 0.085
 			angular_coeff = 0.11
-			K = 1.1 # lower numbers = higher angles
+			K = 1 # lower numbers = higher angles
 			angle = (max_distance - self.gripper_angle_grasp) / angular_coeff * K
 			position = angle
 			velocity = 0.4
@@ -510,6 +510,7 @@ class ur5_grasp_project(object):
 						[-0.65, 0.1, 0.2]]
 		garbage_location = [-0.4, -0.30, 0.10]
 		
+		raw_input('=== Press enter to start the grasping process')
 		while not rospy.is_shutdown():
 			print('\n')
 			# The grasp is performed randomly and the chosen object is published to
@@ -559,18 +560,18 @@ class ur5_grasp_project(object):
 					# Moving the robot to pick the object - BE CAREFULL!
 					self.traj_planner([], 'grasp', movement='slow')
 					
-					# print("Picking object...")				
-					# if args.gazebo:
-					# 	self.gripper_send_position_goal(action='pick')
-					# 	self.get_link_position_picking()
-					# else:
-					# 	raw_input("==== Press enter to close the gripper!")
-					# 	self.command_gripper('c')
+					print("Picking object...")				
+					if args.gazebo:
+						self.gripper_send_position_goal(action='pick')
+						self.get_link_position_picking()
+					else:
+						raw_input("==== Press enter to close the gripper!")
+						self.command_gripper('c')
 					
 					print("Moving object to the bin...")				
 					# After a collision is detected, the arm will start the picking action
-					# self.picking = True # Attach object
-					raw_input("==== go to bin location")
+					self.picking = True # Attach object
+					raw_input("==== Press enter to move to the bin location")
 
 					if random_object_id < 5:
 						self.traj_planner(bin_location[0], movement='fast')
@@ -582,7 +583,6 @@ class ur5_grasp_project(object):
 
 					if number_of_detected_tags:
 						selected_tag_status = self.detected_tags[random_object_id] # if the tag was detected or not
-						print('Selected tag status: ', selected_tag_status)
 						print('selected tag: ', self.tags[random_object_id])
 						if selected_tag_status:
 							self.tf.waitForTransform("base_link", self.tags[random_object_id], rospy.Time(0), rospy.Duration(2.0)) # rospy.Time.now()
@@ -605,17 +605,17 @@ class ur5_grasp_project(object):
 
 					raw_input("==== Continue!")
 
-					# print("Placing object...")					
-					# # After the bin location is reached, the robot will place the object and move back
-					# # to the initial position
-					# self.picking = False # Detach object
-					# if args.gazebo:
-					# 	self.gripper_send_position_goal(0.3)
-					# 	# Not working anymore - need to investigate
-					# 	# self.delete_model_service_method() 
-					# 	self.reset_link_name()
-					# else:
-					# 	self.command_gripper('o')
+					print("Placing object...")					
+					# After the bin location is reached, the robot will place the object and move back
+					# to the initial position
+					self.picking = False # Detach object
+					if args.gazebo:
+						self.gripper_send_position_goal(0.3)
+						# Not working anymore - need to investigate
+						# self.delete_model_service_method() 
+						self.reset_link_name()
+					else:
+						self.command_gripper('o')
 
 					print("> Moving back to home position...\n")
 					# self.traj_planner([-0.45, -0.16, 0.15], movement='fast')
@@ -648,14 +648,16 @@ def main():
 		ur5_vel.traj_planner(depth_shot_point, movement='fast')
 
 	if args.gazebo:
-		print("Starting the gripper in Gazebo! Please wait...")
+		print("> Starting the gripper in Gazebo! Please wait...")
 		ur5_vel.gripper_send_position_goal(0.4)
 	else:
-		print("Starting the real gripper! Please wait...")
+		print("> Starting the real gripper! Please wait...")
 		ur5_vel.command_gripper('r')
 		rospy.sleep(0.5)
 		ur5_vel.command_gripper('a')
 		ur5_vel.command_gripper('o')
+	
+	print('> Gripper started \n')
 	
 	ur5_vel.grasp_main(point_init_home, depth_shot_point)
 
