@@ -38,6 +38,10 @@ pip install tensorflow-gpu==1.14.0
 echo '###### Cloning the universal_robot package ######'
 git clone -b kinetic-devel https://github.com/ros-industrial/universal_robot ../../universal_robot
 
+echo '###### Cloning the apriltag packages ######'
+git clone https://github.com/AprilRobotics/apriltag.git ../../apriltag
+git clone https://github.com/AprilRobotics/apriltag_ros.git ../../apriltag_ros # Clone Apriltag ROS wrapper
+
 echo '###### Cloning the ur_modern_driver package ######'
 git clone -b kinetic-devel https://github.com/ros-industrial/ur_modern_driver ../../ur_modern_driver
 
