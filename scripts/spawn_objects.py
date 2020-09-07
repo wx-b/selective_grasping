@@ -88,42 +88,42 @@ if __name__ == '__main__':
 	# Spawn boxes #
 	###############
 
-	object_path = '/models/b0/model.sdf'
+	object_path = '/models/boxes/b0/model.sdf'
 	ptFinal = [0.33, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b0', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/b1/model.sdf'
+	object_path = '/models/boxes/b1/model.sdf'
 	ptFinal = [0.25, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b1', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/b2/model.sdf'
+	object_path = '/models/boxes/b2/model.sdf'
 	ptFinal = [0.17, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b2', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/b3/model.sdf'
+	object_path = '/models/boxes/b3/model.sdf'
 	ptFinal = [0.09, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b3', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/b4/model.sdf'
+	object_path = '/models/boxes/b4/model.sdf'
 	ptFinal = [0.01, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b4', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/b5/model.sdf'
+	object_path = '/models/boxes/b5/model.sdf'
 	ptFinal = [-0.07, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b5', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/b6/model.sdf'
+	object_path = '/models/boxes/b6/model.sdf'
 	ptFinal = [-0.15, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b6', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/b7/model.sdf'
+	object_path = '/models/boxes/b7/model.sdf'
 	ptFinal = [-0.23, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b7', object_path, ptFinal, oriFinal)

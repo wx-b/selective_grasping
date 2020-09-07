@@ -7,24 +7,24 @@
       <collision name="collision">
         <geometry>
           <mesh>
-            <uri>model://b6/meshes/b6.dae</uri>
+            <uri>model://boxes/b6/meshes/b6.dae</uri>
             <scale>0.6 0.6 0.6</scale>
           </mesh>
         </geometry>
-        <pose>0 0 0.016 0 0 0</pose>
+        <pose>0 0 0.0 0 0 0</pose>
       </collision>
 
       <visual name="visual">
         <geometry>
           <mesh>
-            <uri>model://b6/meshes/b6.dae</uri>
+            <uri>model://boxes/b6/meshes/b6.dae</uri>
             <scale>0.6 0.6 0.6</scale>
           </mesh>
         </geometry>
         <material>
           <script>
-            <uri>model://b6/materials/scripts</uri>
-            <uri>model://b6/materials/textures</uri>
+            <uri>model://boxes/b6/materials/scripts</uri>
+            <uri>model://boxes/b6/materials/textures</uri>
             <name>B6/Diffuse</name>
           </script>
         </material>

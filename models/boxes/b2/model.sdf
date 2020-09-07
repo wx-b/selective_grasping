@@ -1,31 +1,31 @@
 <?xml version="1.0" ?>
 <sdf version="1.5">
-  <model name="box_b3">
+  <model name="box_b2">
     <static>true</static>
-    <link name="box_b3_link">
+    <link name="box_b2_link">
 
       <collision name="collision">
         <geometry>
           <mesh>
-            <uri>model://b3/meshes/b3.dae</uri>
+            <uri>model://boxes/b2/meshes/b2.dae</uri>
             <scale>0.6 0.6 0.6</scale>
           </mesh>
         </geometry>
-        <pose>0 0 0.016 0 0 0</pose>
+        <pose>0 0 0.0 0 0 0</pose>
       </collision>
 
       <visual name="visual">
         <geometry>
           <mesh>
-            <uri>model://b3/meshes/b3.dae</uri>
+            <uri>model://boxes/b2/meshes/b2.dae</uri>
             <scale>0.6 0.6 0.6</scale>
           </mesh>
         </geometry>
         <material>
           <script>
-            <uri>model://b3/materials/scripts</uri>
-            <uri>model://b3/materials/textures</uri>
-            <name>B3/Diffuse</name>
+            <uri>model://boxes/b2/materials/scripts</uri>
+            <uri>model://boxes/b2/materials/textures</uri>
+            <name>B2/Diffuse</name>
           </script>
         </material>
       </visual>

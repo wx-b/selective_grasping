@@ -176,15 +176,15 @@ class ur5_grasp_project(object):
 			self.left_collision = True
 			string = msg.states[0].collision1_name
 			string_collision = re.findall(r'::(.+?)::',string)[0]
-			print("Left String_collision: ", string_collision)
+			# print("Left String_collision: ", string_collision)
 			if string_collision in self.finger_links:
 				string = msg.states[0].collision2_name
-				print("Left Real string (object): ", string)
+				# print("Left Real string (object): ", string)
 				self.string = re.findall(r'::(.+?)::', string)[0]
-				print("Left before: ", self.string)
+				# print("Left before: ", self.string)
 			else:
 				self.string = string_collision
-				print("Left in else: ", string_collision)
+				# print("Left in else: ", string_collision)
 		else:
 			self.left_collision = False
 
@@ -193,15 +193,15 @@ class ur5_grasp_project(object):
 			self.right_collision = True
 			string = msg.states[0].collision1_name
 			string_collision = re.findall(r'::(.+?)::',string)[0]
-			print("Right String_collision: ", string_collision)
+			# print("Right String_collision: ", string_collision)
 			if string_collision in self.finger_links:
 				string = msg.states[0].collision2_name
-				print("Right Real string (object): ", string)
+				# print("Right Real string (object): ", string)
 				self.string = re.findall(r'::(.+?)::',string)[0]
-				print("Right before: ", self.string)
+				# print("Right before: ", self.string)
 			else:
 				self.string = string_collision
-				print("Right in else: ", self.string)
+				# print("Right in else: ", self.string)
 		else:
 			self.right_collision = False
 
@@ -501,6 +501,7 @@ class ur5_grasp_project(object):
 		
 	def move_home_on_shutdown(self):
 		self.client.cancel_goal()
+		self.client_gripper.cancel_goal()
 		print("Shutting down node...")
 	
 	def grasp_main(self, point_init_home, depth_shot_point):
@@ -512,11 +513,10 @@ class ur5_grasp_project(object):
 		
 		raw_input('=== Press enter to start the grasping process')
 		while not rospy.is_shutdown():
-			print('\n')
 			# The grasp is performed randomly and the chosen object is published to
 			# the detection node
 			if not len(random_classes):
-				print('> There is no object remaining in the workspace. Resetting the objects list...')
+				print("\n> IMPORTANT! There is no object remaining in the object's picking list. Resetting the objects list...\n")
 				random_classes = [i for i in range(len(self.classes))]
 			
 			random_object_id = random.sample(random_classes, 1)[0]
@@ -590,6 +590,10 @@ class ur5_grasp_project(object):
 							ptFinal = [ptFinal[i] + self.tags_position_offset[i] for i in range(3)]
 
 							raw_input("==== go to tag")	
+							pt_inter = deepcopy(ptFinal)
+							pt_inter[-1] += 0.1
+							self.traj_planner(pt_inter, movement='fast')
+							rospy.sleep(1)
 							self.traj_planner(ptFinal, movement='fast')
 						else:
 							# In this case, the camera identifies some other tag but not the tag corresponding
