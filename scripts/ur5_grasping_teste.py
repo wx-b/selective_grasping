@@ -171,16 +171,18 @@ class ur5_grasp_project(object):
 	def monitor_contacts_left_finger_callback(self, msg):
 		if msg.states:
 			self.left_collision = True
-			string = msg.states[0].collision1_name
-			string_collision = re.findall(r'::(.+?)::',string)[0]
-			# print("Left String_collision: ", string_collision)
-			if string_collision in self.finger_links:
+			string = msg.states[0].collision1_name # get the name of the object involved in collision
+			string_collision = re.findall(r'::(.+?)::',string)[0] # get the names of all objects involved in collision 
+			self.string = string_collision
+			print("Left String_collision: ", string_collision)
+			# If the collision is one of the links of the robot, ignore and get the other object's name
+			if string_collision in self.finger_links: 
 				string = msg.states[0].collision2_name
-				# print("Left Real string (object): ", string)
+				print("Left Real string (object): ", string)
 				self.string = re.findall(r'::(.+?)::', string)[0]
-				# print("Left before: ", self.string)
-			else:
-				self.string = string_collision
+				print("Left before: ", self.string)
+			# else:
+				# self.string = string_collision
 				# print("Left in else: ", string_collision)
 		else:
 			self.left_collision = False
@@ -190,14 +192,15 @@ class ur5_grasp_project(object):
 			self.right_collision = True
 			string = msg.states[0].collision1_name
 			string_collision = re.findall(r'::(.+?)::',string)[0]
-			# print("Right String_collision: ", string_collision)
+			self.string = string_collision
+			print("Right String_collision: ", string_collision)
 			if string_collision in self.finger_links:
 				string = msg.states[0].collision2_name
-				# print("Right Real string (object): ", string)
+				print("Right Real string (object): ", string)
 				self.string = re.findall(r'::(.+?)::',string)[0]
-				# print("Right before: ", self.string)
-			else:
-				self.string = string_collision
+				print("Right before: ", self.string)
+			# else:
+				# self.string = string_collision
 				# print("Right in else: ", self.string)
 		else:
 			self.right_collision = False
@@ -411,7 +414,7 @@ class ur5_grasp_project(object):
 			velocity = 0.4
 		elif action == 'pick':
 			position = 0.7
-			velocity = 0.05
+			velocity = 0.03
 			duration = 8.0
 
 		goal = FollowJointTrajectoryGoal()
@@ -424,7 +427,9 @@ class ur5_grasp_project(object):
 		self.client_gripper.send_goal(goal)
 		if action == 'pick':
 			while not rospy.is_shutdown() and not self.left_collision and not self.right_collision:
+				print('inside while')
 				pass
+			print('cancel goal')
 			self.client_gripper.cancel_goal()
 		
 	def move_home_on_shutdown(self):
@@ -448,6 +453,7 @@ def main():
 		# Remove all objects from the scene and press enter
 		raw_input("==== Press enter to home the robot!")
 		ur5_vel.traj_planner(point_init_home, movement='fast')
+		ur5_vel.gripper_send_position_goal(0.1)
 
 		raw_input("==== Press enter to move the robot to the object position!")
 		ur5_vel.traj_planner([-0.37, 0.11, 0.03], movement='fast')	    
@@ -459,7 +465,7 @@ def main():
 				
 		print("Moving object to the bin...")				
 		# After a collision is detected, the arm will start the picking action
-		ur5_vel.picking = True # Attach object
+		# ur5_vel.picking = True # Attach object
 
 		ur5_vel.traj_planner(point_init_home, movement='fast')
 
