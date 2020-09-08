@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <sdf version="1.5">
   <model name="turbine_housing">
-    <static>true</static>
+    <static>false</static>
     <link name="turbine_housing_link">
       <self_collide>true</self_collide>
 

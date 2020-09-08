@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <sdf version="1.5">
   <model name="part_3">
-    <static>true</static>
+    <static>false</static>
     <link name="part_3_link">
       <self_collide>true</self_collide>
 

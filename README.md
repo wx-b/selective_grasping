@@ -68,12 +68,15 @@ cd ~/catkin_ws_new/src/selective_grasping/install
 ```
 ------------
 <a name="4.0"></a>
-## 4.0 - Run SSGG-CNN in Gazebo
+## 4.0 - Run the experiments in Gazebo
 [Back to the top](#top)
+
+> **THE GAZEBO SIMULATION IS NOT WORKING PROPERLY. THE GRASPS ARE UNSTABLE AND NEED TO BE FIXED. THE SIMULATION IS USED ONLY TO RUN EXPERIMENTS PRIOR TO THE REAL WORLD APPLICATION TO AVOID ACCIDENTS**
 
 Please follow each following steps:
 
 ### 4.1 - Launch Gazebo:
+
 ```bash
 roslaunch selective_grasping gazebo_ur5.launch
 ```
@@ -87,14 +90,14 @@ rosrun selective_grasping ur5_open_loop.py --gazebo
 
 ### 4.3 - Run the SSD node
 ```bash
-rosrun selective_grasping main.py
+rosrun selective_grasping detect.py --gazebo
 ```
 
 ### 4.4 - Run the GG-CNN node
 Press enter after the following message appears and jump to the step 4.5:
 "Press enter to start the GGCNN"
 ```bash
-rosrun selective_grasping run_ggcnn.py --ssggcnn
+rosrun selective_grasping run_ggcnn.py --gazebo
 ```
 
 ### 4.5 - Spawn the objects in the workspace
@@ -103,8 +106,9 @@ rosrun selective_grasping spawn_objects.py
 ```
 
 ### 4.6 - UR5 control node
-After running the GG-CNN node you are able to move the robot and perform the grasp.
-Press enter to complete each related task specified in ur5_open_loop.py
+After running the GG-CNN node you are able to move the robot and perform the grasp using the terminal provided by step 4.2
+
+
 
 ### 4.7 - Change the Gazebo properties (OPTIONAL)
 It will speed up your Gazebo simulation a little bit :)

@@ -22,7 +22,7 @@
   </include>
 
   <node pkg="selective_grasping" type="spawn_table.py" name="spawn_table_model"/>
-  
+
   <node name="spawn_robot"
         pkg="gazebo_ros"
         type="spawn_model"
@@ -35,7 +35,15 @@
               -Y 1.57
               -unpause"
         respawn="false"
-        output="screen" />  
+        output="screen" />
+
+  ########################################
+  # Grasping in Gazebo (Not working 100%)
+  # Need to correct unstable grasps
+  ########################################
+
+  <node pkg="selective_grasping" type="publish_objects_path.py" name="publish_objects_path"/>
+  <include file="$(find selective_grasping)/launch/continuous_detection.launch"/>
 
   ########################################
   # Load Parameters

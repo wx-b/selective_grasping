@@ -63,11 +63,10 @@ class ur5_grasp_project(object):
 		# Gazebo Related #
 		##################
 		if args.gazebo:
-			# For picking
-			self.pub_model_position = rospy.Publisher('/gazebo/set_link_state', LinkState, queue_size=1)
 			self.get_model_coordinates = rospy.ServiceProxy('/gazebo/get_link_state', GetLinkState)
-			self.delete_model_service = rospy.ServiceProxy('/gazebo/delete_model', DeleteModel)
-			rospy.Subscriber('gazebo/model_states', ModelStates, self.get_model_state_callback, queue_size=1)
+			self.grasping_flag = rospy.Publisher('grasp_started', Bool, queue_size=1) # Detection flag
+			self.grasping_object_name = rospy.Publisher('grasp_object_name', String, queue_size=1) 
+			self.grasping_object_pose = rospy.Publisher('grasp_object_position', Pose, queue_size=1)
 			
 			# Subscriber used to read joint values
 			rospy.Subscriber('/joint_states', JointState, self.ur5_actual_position_callback, queue_size=1)
@@ -205,14 +204,6 @@ class ur5_grasp_project(object):
 		else:
 			self.right_collision = False
 
-	def delete_model_service_method(self):
-		"""
-		Delete a model in Gazebo
-		"""
-		string = self.string
-		model = string.replace("_link", "")
-		self.delete_model_service(model)
-
 	def ur5_actual_position_callback(self, joint_values_from_ur5):
 		"""Get UR5 joint angles
 		
@@ -232,9 +223,6 @@ class ur5_grasp_project(object):
 			self.th3, self.th2, self.th1, self.th4, self.th5, self.th6 = joint_values_from_ur5.position
 		
 		self.actual_position = [self.th1, self.th2, self.th3, self.th4, self.th5, self.th6]
-
-	def get_model_state_callback(self, msg):
-		self.object_picking()
 
 	def ggcnn_command_callback(self, msg):
 		"""
@@ -261,22 +249,9 @@ class ur5_grasp_project(object):
 		
 	def get_link_position_picking(self):
 		link_name = self.string
-		print('String: ', link_name)
 		model_coordinates = self.get_model_coordinates(self.string, 'wrist_3_link')
 		self.model_pose_picking = model_coordinates.link_state.pose
-
-	def reset_link_name(self):
-		self.string = ""
-
-	def object_picking(self):
-		picking = self.picking
-		if picking:
-			# angle = quaternion_from_euler(1.57, 0.0, 0.0)
-			object_picking = LinkState()
-			object_picking.link_name = self.string
-			object_picking.pose = Pose(self.model_pose_picking.position, self.model_pose_picking.orientation)
-			object_picking.reference_frame = "wrist_3_link"
-			self.pub_model_position.publish(object_picking)            
+		self.grasping_object_pose.publish(Pose(self.model_pose_picking.position, self.model_pose_picking.orientation))
 
 	def get_ik(self, position):
 		"""Get the inverse kinematics 
@@ -564,15 +539,14 @@ class ur5_grasp_project(object):
 					if args.gazebo:
 						self.gripper_send_position_goal(action='pick')
 						self.get_link_position_picking()
+						self.grasping_flag.publish(True)
+						self.grasping_object_name.publish(self.string)
 					else:
 						raw_input("==== Press enter to close the gripper!")
 						self.command_gripper('c')
 					
-					print("Moving object to the bin...")				
 					# After a collision is detected, the arm will start the picking action
-					self.picking = True # Attach object
-					raw_input("==== Press enter to move to the bin location")
-
+					raw_input("==== Press enter to move the object to the bin")
 					if random_object_id < 5:
 						self.traj_planner(bin_location[0], movement='fast')
 					else:
@@ -593,7 +567,6 @@ class ur5_grasp_project(object):
 							pt_inter = deepcopy(ptFinal)
 							pt_inter[-1] += 0.1
 							self.traj_planner(pt_inter, movement='fast')
-							rospy.sleep(1)
 							self.traj_planner(ptFinal, movement='fast')
 						else:
 							# In this case, the camera identifies some other tag but not the tag corresponding
@@ -607,22 +580,18 @@ class ur5_grasp_project(object):
 						raw_input('=== Pres enter to proceed')
 						self.traj_planner(garbage_location, movement='fast')
 
-					raw_input("==== Continue!")
-
 					print("Placing object...")					
 					# After the bin location is reached, the robot will place the object and move back
 					# to the initial position
-					self.picking = False # Detach object
+					# self.picking = False # Detach object
 					if args.gazebo:
 						self.gripper_send_position_goal(0.3)
-						# Not working anymore - need to investigate
-						# self.delete_model_service_method() 
-						self.reset_link_name()
+						# self.delete_model_service_method() # Not working anymore - need to investigate
+						self.grasping_flag.publish(False)
 					else:
 						self.command_gripper('o')
 
 					print("> Moving back to home position...\n")
-					# self.traj_planner([-0.45, -0.16, 0.15], movement='fast')
 					self.traj_planner(point_init_home, movement='fast')
 					self.traj_planner(depth_shot_point, movement='slow')
 					print('> Grasping finished \n')
