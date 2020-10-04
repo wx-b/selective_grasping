@@ -57,8 +57,8 @@ class Detector(object):
 		# Publish the image with the bounding boxes to ROS
 		self.img_pub = rospy.Publisher('img/bouding_box', Image, queue_size=1)
 		# Publish the bounding boxes coordinates
-		self.arraypub = rospy.Publisher('bb_points_array', Int32MultiArray, queue_size=10)
-		self.labelpub = rospy.Publisher('label_array', Int32MultiArray, queue_size=10)
+		self.bb_points_array = rospy.Publisher('bb_points_array', Int32MultiArray, queue_size=10)
+		self.label_array = rospy.Publisher('label_array', Int32MultiArray, queue_size=10)
 		self.detection_ready = rospy.Publisher('flags/detection_ready', Bool, queue_size=1) # Detection flag
 		self.reposition_robot_flag = rospy.Publisher('flags/reposition_robot_flag', Bool, queue_size=1) # Detection flag
 		self.reposition_coord = rospy.Publisher('reposition_coord', Float32MultiArray, queue_size=10)
@@ -68,7 +68,7 @@ class Detector(object):
 		
 		# Subscribe to the image published in Gazebo
 		rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback, queue_size=10)
-		rospy.Subscriber("pipeline/required_class", Int8, self.chosen_class_callback, queue_size=10)
+		rospy.Subscriber("pipeline/required_class", Int8, self.required_pipeline_class_callback, queue_size=10)
 		if not args.gazebo:
 			camera_topic = rospy.get_param("/GGCNN/camera_topic_realsense")
 		else:
@@ -124,7 +124,7 @@ class Detector(object):
 		self.depth_img_height = 480
 		self.depth_img_width = 640
 
-		self.chosen_class = False
+		self.pipeline_required_class = False
 		self.receive_bb_status = False # Indicates if the 
 
 	def filter_predictions(self, bounding_boxes, scores, class_IDs):
@@ -142,9 +142,9 @@ class Detector(object):
 		color_img = self.bridge.imgmsg_to_cv2(color_msg)
 		self.color_img = color_img
 	
-	def chosen_class_callback(self, msg):
-		self.chosen_class = msg.data
-		print('class: ', self.classes[self.chosen_class])
+	def required_pipeline_class_callback(self, msg):
+		self.pipeline_required_class = msg.data
+		print('class: ', self.classes[self.pipeline_required_class])
 
 	def resize_bounding_boxes(self, bounding_box):
 		"""
@@ -211,11 +211,11 @@ class Detector(object):
 		# If any object is found
 		if fclass_IDs.size > 0:
 			# If the request object is found
-			if self.chosen_class in fclass_IDs:
+			if self.pipeline_required_class in fclass_IDs:
 				print('found obj')
 				# we need to find all ocurrences of the class identified to consider
 				# situation where we have false positives as well
-				chosen_class_index = [i for i, x in enumerate(fclass_IDs) if x == self.chosen_class]
+				chosen_class_index = [i for i, x in enumerate(fclass_IDs) if x == self.pipeline_required_class]
 				for class_index in chosen_class_index:
 					bbox_list.append(resized_bbox[class_index])
 					fscores_list.append(fscores[class_index])
@@ -273,11 +273,11 @@ class Detector(object):
 						self.detection_ready.publish(True)
 						self.reposition_robot_flag.publish(True)
 			else:
-				print('The object ({}) was not found'.format(self.classes[self.chosen_class]))
+				print('The object ({}) was not found'.format(self.classes[self.pipeline_required_class]))
 				self.detection_ready.publish(False)
 				self.reposition_robot_flag.publish(False)
 		else:
-			print('No objects (including the requested one ({})) were found'.format(self.classes[self.chosen_class]))
+			print('No objects (including the requested one ({})) were found'.format(self.classes[self.pipeline_required_class]))
 			self.detection_ready.publish(False)
 			self.reposition_robot_flag.publish(False)
 
@@ -318,8 +318,8 @@ class Detector(object):
 				
 					points_to_send.data = points_to_send_list # assign the array with the value you want to send
 					labels_to_send.data = labels_to_send_list
-					self.arraypub.publish(points_to_send)
-					self.labelpub.publish(labels_to_send)
+					self.bb_points_array.publish(points_to_send)
+					self.label_array.publish(labels_to_send)
 					points_to_send.data = []
 					labels_to_send.data = []
 				self.receive_bb_status = False
@@ -327,10 +327,10 @@ class Detector(object):
 		
 def main():
 	# TODO: You just need to pass the param name inside the log folder (checkpoints folder configured in config.json)
-	params = 'ssd_512_resnet50_v1_voc_best_epoch_0017_map_0.9534.params'
+	params = 'ssd_512_resnet50_v1_coco_best_epoch_0047_map_0.9656.params'
 
 	obj_detect = Detector(params, 
-						  model_name='ssd_512_resnet50_v1_voc', 
+						  model_name='ssd_512_resnet50_v1_coco', 
 						  ctx='gpu', 
 						  filter_threshold=0.8, 
 						  nms_thresh=0.5)

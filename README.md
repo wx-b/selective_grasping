@@ -45,6 +45,11 @@ This code was developed with Python 2.7 on Ubuntu 16.04 with ROS Kinetic.
 
 > **_NOTE:_**  This package should be placed into your src folder. Please open an issue if you find any problem related to this package.
 
+
+In order to run the experiment you will need a trained .params (Contact the authors to download the .params)
+Create a folder called params inside the selective_grasping folder and put the .params there.
+Remember to rename the .params files and related variables in detect.py
+
 ------------
 <a name="3.0"></a>
 ## 3.0 - Easy install

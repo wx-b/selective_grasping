@@ -94,8 +94,8 @@ class ssgg_grasping(object):
 		rospy.Subscriber('bb_points_array', Int32MultiArray, self.bounding_boxes_callback, queue_size=10)
 		rospy.Subscriber('label_array', Int32MultiArray, self.labels_callback, queue_size=10)
 		rospy.Subscriber('flags/detection_ready', Bool, self.detection_ready_callback ,queue_size=1) # Detection node detected something and is asking to generate a grasp pose
-		rospy.Subscriber("pipeline/required_class", Int8, self.chosen_class_callback, queue_size=10)
-		self.chosen_class = 100
+		rospy.Subscriber("pipeline/required_class", Int8, self.required_pipeline_class_callback, queue_size=10)
+		self.required_pipeline_class = 100
 
 		# Initialize some var
 		self.depth_crop = None
@@ -115,7 +115,7 @@ class ssgg_grasping(object):
 		self.max_pixel_reescaled = np.array([150, 150])
 
 		self.receive_bb = False
-		self.receive_lb = False
+		self.receive_label_array = False
 
 		# Tensorflow graph to allow use in callback.
 		self.graph = tf.get_default_graph()
@@ -134,19 +134,20 @@ class ssgg_grasping(object):
 	def detection_ready_callback(self, detection_ready):
 		self.detection_ready_status = detection_ready
 	
-	def chosen_class_callback(self, msg):
-		self.chosen_class = msg.data
+	def required_pipeline_class_callback(self, msg):
+		self.required_pipeline_class = msg.data
 	
 	def labels_callback(self, labels):
-		classes = self.classes
-		labels = list(labels.data)			
+		# classes = self.classes
+		labels = list(labels.data)
+		print('Labels (n eh soh 1 label que ja foi checado?: ', labels)		
 
 		label_list_int = []
 		for label in labels:
 			label_list_int.append(label)
 
 		self.label_list_int = label_list_int
-		self.receive_lb = True
+		self.receive_label_array = True
 		
 	def bounding_boxes_callback(self, msg):        
 		box_number = len(msg.data) / 4		
@@ -178,13 +179,13 @@ class ssgg_grasping(object):
 	def copy_obj_to_depth_img(self):
 		print('Detection ready status: ', self.detection_ready_status)
 		print('Receive_lb: ', self.receive_lb)
-		if self.receive_lb and self.detection_ready_status:
+		if self.receive_label_array and self.detection_ready_status:
 			label_list_int = self.label_list_int
-			if self.receive_bb and (self.chosen_class in label_list_int):
+			if self.receive_bb and (self.required_pipeline_class in label_list_int):
 				points_vec = self.points_vec			
 
-				chosen_class_index = label_list_int.index(self.chosen_class)
-				chosen_points_vec = points_vec[chosen_class_index]
+				required_pipeline_class_index = label_list_int.index(self.required_pipeline_class)
+				chosen_points_vec = points_vec[required_pipeline_class_index]
 
 				# Copy the raw depth image
 				depth_image_shot_raw = self.bridge.imgmsg_to_cv2(self.depth_image_shot_raw)
@@ -211,7 +212,7 @@ class ssgg_grasping(object):
 					# Publish the state of the detection
 					
 				self.receive_bb = False
-				self.receive_lb = False
+				self.receive_label_array = False
 				return number_of_boxes
 			else:
 				self.grasp_ready.publish(False)

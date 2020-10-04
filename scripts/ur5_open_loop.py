@@ -64,9 +64,9 @@ class ur5_grasp_project(object):
 		##################
 		if args.gazebo:
 			self.get_model_coordinates = rospy.ServiceProxy('/gazebo/get_link_state', GetLinkState)
-			self.grasping_flag = rospy.Publisher('grasp_started', Bool, queue_size=1) # Detection flag
-			self.grasping_object_name = rospy.Publisher('grasp_object_name', String, queue_size=1) 
-			self.grasping_object_pose = rospy.Publisher('grasp_object_position', Pose, queue_size=1)
+			self.grasp_started = rospy.Publisher('grasp_started', Bool, queue_size=1) # Detection flag
+			self.grasp_object_name = rospy.Publisher('grasp_object_name', String, queue_size=1) 
+			self.grasp_object_position = rospy.Publisher('grasp_object_position', Pose, queue_size=1)
 			
 			# Subscriber used to read joint values
 			rospy.Subscriber('/joint_states', JointState, self.ur5_actual_position_callback, queue_size=1)
@@ -251,7 +251,7 @@ class ur5_grasp_project(object):
 		link_name = self.string
 		model_coordinates = self.get_model_coordinates(self.string, 'wrist_3_link')
 		self.model_pose_picking = model_coordinates.link_state.pose
-		self.grasping_object_pose.publish(Pose(self.model_pose_picking.position, self.model_pose_picking.orientation))
+		self.grasp_object_position.publish(Pose(self.model_pose_picking.position, self.model_pose_picking.orientation))
 
 	def get_ik(self, position):
 		"""Get the inverse kinematics 
@@ -539,8 +539,8 @@ class ur5_grasp_project(object):
 					if args.gazebo:
 						self.gripper_send_position_goal(action='pick')
 						self.get_link_position_picking()
-						self.grasping_flag.publish(True)
-						self.grasping_object_name.publish(self.string)
+						self.grasp_started.publish(True)
+						self.grasp_object_name.publish(self.string)
 					else:
 						raw_input("==== Press enter to close the gripper!")
 						self.command_gripper('c')
@@ -587,7 +587,7 @@ class ur5_grasp_project(object):
 					if args.gazebo:
 						self.gripper_send_position_goal(0.3)
 						# self.delete_model_service_method() # Not working anymore - need to investigate
-						self.grasping_flag.publish(False)
+						self.grasp_started.publish(False)
 					else:
 						self.command_gripper('o')
 

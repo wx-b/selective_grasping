@@ -62,6 +62,8 @@ class plot_images(object):
 	def bounding_boxes_callback(self, msg):        
 		center_calibrated_point = self.center_calibrated_point
 		box_number = len(msg.data) / 4
+
+		print('box_number: ', box_number)
 		
 		box_points = list(msg.data)
 		
@@ -170,6 +172,7 @@ class plot_images(object):
 
 				added_image = cv2.cvtColor(added_image, cv2.COLOR_RGB2BGR)
 				cv2.imshow('Random image', added_image)
+				print('Publicando')
 				a = cv2.waitKey(1) # close window when ESC is pressed 
 				self.receive_bb = False
 		cv2.destroyAllWindows()
