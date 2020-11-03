@@ -80,55 +80,116 @@ cd ~/catkin_ws_new/src/selective_grasping/install
 
 Please follow each following steps:
 
-### 4.1 - Launch Gazebo:
+4.1 - Launch Gazebo:
 
 ```bash
 roslaunch selective_grasping gazebo_ur5.launch
 ```
 
-### 4.2 - Run the UR5 control node 
+4.2 - Run the UR5 control node 
 Press enter after the following message appears and jump to the step 4.3:
+
 "==== Press enter to move the robot to the 'depth cam shot' position!"
 ```bash
 rosrun selective_grasping ur5_open_loop.py --gazebo
 ```
 
-### 4.3 - Run the SSD node
+4.3 - Run the SSD node
 ```bash
 rosrun selective_grasping detect.py --gazebo
 ```
 
-### 4.4 - Run the GG-CNN node
+4.4 - Run the GG-CNN node
 Press enter after the following message appears and jump to the step 4.5:
 "Press enter to start the GGCNN"
 ```bash
 rosrun selective_grasping run_ggcnn.py --gazebo
 ```
 
-### 4.5 - Spawn the objects in the workspace
+4.5 - Spawn the objects in the workspace
 ```bash
 rosrun selective_grasping spawn_objects.py
 ```
 
-### 4.6 - UR5 control node
+4.6 - Detect the april tags in the environment
+This node will generate a frame for the identified tag in the environment
+```bash
+rosrun selective_grasping april_tag_tf_generator.py
+```
+
+4.7 - UR5 control node
 After running the GG-CNN node you are able to move the robot and perform the grasp using the terminal provided by step 4.2
 
 
 
-### 4.7 - Change the Gazebo properties (OPTIONAL)
+4.8 - Change the Gazebo properties (OPTIONAL)
 It will speed up your Gazebo simulation a little bit :)
 ```bash
 rosrun selective_grasping change_gazebo_properties.py
 ```
 
-### 4.8 - Visualize the images published by the GG-CNN
+4.9 - Visualize the images published by the GG-CNN
 You might want to see the grasp or any other image. In order to do that, you can use the rqt_image_view.
 ```bash
 rosrun rqt_image_view
 ```
 
-### 4.9 - Visualize depth cloud in RVIZ
+4.9 - Visualize depth cloud in RVIZ
 If you want to visualize the data being published by the Intel Realsense D435 please run the following node:
 ```bash
 rosrun selective_grasping rviz_ur5.launch
 ```
+
+---
+
+<a name="5.0"></a>
+## 5.0 Connecting with real UR5
+
+5.1 - Use the following command in order to connect with real UR5. If you are using velocity control, do not use bring_up. Use ur5_ros_control instead.
+
+```
+roslaunch selective_grasping ur5_ros_control.launch robot_ip:=192.168.131.13
+```
+
+5.2 - Launch the real Intel Realsense D435
+```
+roslaunch selective_grasping rs_d435_camera.launch
+```
+
+5.3 - Launch the gripper control node
+```
+rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
+```
+
+5.4 - Launch the ggcnn node
+```
+rosrun selective_grasping run_ggcnn_ur5.py --real
+```
+
+5.5 - Launch the main node of the Intel Realsense D435
+```
+rosrun selective_grasping command_GGCNN_ur5.py
+```
+
+5.6 - If you want to visualize the depth or point cloud, you can launch RVIZ
+```
+roslaunch selective_grasping rviz_ur5.launch
+```
+
+5.7 - Firstly check the machine IP. The IP configured on the robot must have the last digit different.
+```bash
+ifconfig
+```
+
+Disable firewall 
+```bash
+sudo ufw disable
+```
+
+Set up a static IP on UR5 according to the following figure
+
+![config](https://user-images.githubusercontent.com/28100951/71323978-2ca7d380-24b8-11ea-954c-940b009cfd93.jpg)
+
+Set up a connection on Ubuntu according to the following figure
+
+![config_ethernet2](https://user-images.githubusercontent.com/28100951/71323962-fe29f880-24b7-11ea-86dc-756729932de4.jpg)

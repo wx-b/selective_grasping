@@ -129,18 +129,30 @@ class ssgg_grasping(object):
 		self.cy = K[5]        
 	
 	def get_depth_callback(self, depth_message):
+		"""
+		Store the raw depth image when the message is received
+		"""
 		self.depth_message = depth_message
 	
-	def detection_ready_callback(self, detection_ready):
-		self.detection_ready_status = detection_ready
+	def detection_ready_callback(self, msg):
+		"""
+		Stores the flag that indicates when the detection node is ready
+		The grasp will only be generated when the detection node is ready
+		"""
+		self.detection_ready_status = msg
 	
 	def required_pipeline_class_callback(self, msg):
+		"""
+		required_pipeline_class is the ID of the object to be grasped
+		"""
 		self.required_pipeline_class = msg.data
 	
 	def labels_callback(self, labels):
-		# classes = self.classes
+		"""
+
+		"""
 		labels = list(labels.data)
-		print('Labels (n eh soh 1 label que ja foi checado?: ', labels)		
+		print('Labels (n eh soh 1 label que ja foi checado?: ', labels)
 
 		label_list_int = []
 		for label in labels:
@@ -178,7 +190,7 @@ class ssgg_grasping(object):
 
 	def copy_obj_to_depth_img(self):
 		print('Detection ready status: ', self.detection_ready_status)
-		print('Receive_lb: ', self.receive_lb)
+		# print('Receive_lb: ', self.receive_lb)
 		if self.receive_label_array and self.detection_ready_status:
 			label_list_int = self.label_list_int
 			if self.receive_bb and (self.required_pipeline_class in label_list_int):

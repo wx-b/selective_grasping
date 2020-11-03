@@ -233,10 +233,6 @@ class Detector(object):
 				self.bboxes = bbox_list
 
 				for index, bbox in enumerate(bbox_list):
-					# bbox_list.append(bbox)
-					# fscores_list.append(fscores_list[index])
-					# fclass_IDs_list.append(fclass_IDs_list[index])
-
 					if bbox[0] > GGCNN_area[0] and bbox[1] > GGCNN_area[1] and bbox[2] < GGCNN_area[2] and \
 						bbox[3] < GGCNN_area[3]:
 						print('obj inside ggcnn_area')
@@ -294,6 +290,9 @@ class Detector(object):
 		self.img_pub.publish(CvBridge().cv2_to_imgmsg(added_image, 'bgr8'))
 				
 	def detect_main(self):
+		"""
+		Publish the label_array - ID of the identified part
+		"""
 		color_img = self.color_img
 
 		points_to_send = Int32MultiArray()
