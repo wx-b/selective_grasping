@@ -7,6 +7,7 @@
 2. [Required packages - Kinetic Version](#2.0)
 3. [Easy install](#3.0)
 4. [Run GGCNN in Gazebo and RVIZ](#4.0)
+5. [Connecting with real UR5](#5.0)
 
 ------------
 <a name="1.0"></a>
