@@ -152,8 +152,7 @@ class ssgg_grasping(object):
 
 		"""
 		labels = list(labels.data)
-		print('Labels (n eh soh 1 label que ja foi checado?: ', labels)
-
+		
 		label_list_int = []
 		for label in labels:
 			label_list_int.append(label)
@@ -189,7 +188,7 @@ class ssgg_grasping(object):
 		self.depth_image_shot_raw.header = self.depth_message.header    
 
 	def copy_obj_to_depth_img(self):
-		print('Detection ready status: ', self.detection_ready_status)
+		# print('Detection ready status: ', self.detection_ready_status)
 		# print('Receive_lb: ', self.receive_lb)
 		if self.receive_label_array and self.detection_ready_status:
 			label_list_int = self.label_list_int
@@ -405,9 +404,9 @@ def main():
 		if number_of_boxes > 0:
 			with TimeIt('ggcnn_process'):
 				grasp_detection.depth_process_ggcnn()
-			grasp_detection.get_grasp_image()
-			grasp_detection.publish_images()
-			grasp_detection.publish_data_to_robot()        
+				grasp_detection.get_grasp_image()
+				grasp_detection.publish_images()
+				grasp_detection.publish_data_to_robot()        
 		
 		rate.sleep()
 

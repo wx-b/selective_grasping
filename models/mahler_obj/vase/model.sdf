@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <sdf version="1.5">
   <model name="vase">
-    <static>false</static>
+    <static>true</static>
     <link name="vase_link">
       <self_collide>true</self_collide>
 

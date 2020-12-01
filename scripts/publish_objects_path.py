@@ -55,10 +55,10 @@ class objects_path_track(object):
 			self.object_name = ''
 
 	def spin(self):
-		rate = rospy.Rate(120)
+		rate = rospy.Rate(60)
 		while not rospy.is_shutdown():
 			self.object_picking()
-			rate.sleep()
+			# rate.sleep()
 						
 def main():
 	path_track = objects_path_track()

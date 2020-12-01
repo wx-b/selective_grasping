@@ -367,21 +367,21 @@ class ur5_grasp_project(object):
 				# - The detection node is ready (through detection_ready_flag);
 				# - The robot does not need to be repositioned (through reposition_robot_flag)
 				if self.grasp_ready_flag and self.detection_ready_flag and not self.reposition_robot_flag:
-					raw_input("Move to the pre grasp position")
+					raw_input("==== Press enter to move to the pre grasp position")
 					print('> Moving to the grasping position... \n')
 					self.traj_planner([], 'pregrasp', movement='fast')
 					
-					raw_input("Move the gripper")
+					raw_input("==== Press enter to move the gripper")
 					# It closes the gripper a little before approaching the object
 					# to prevent colliding with other objects
 					self.gripper_send_position_goal(action='pre_grasp_angle')
 					
-					raw_input("Move to the grasp position")
+					raw_input("==== Press enter to move to the grasp position")
 					# Moving the robot to pick the object - BE CAREFULL!
 					self.traj_planner([], 'grasp', movement='slow')
 					
-					raw_input('pick the object')
-					print("Picking object...")				
+					raw_input('==== Press enter to pick the object')
+					print("> Picking object...")				
 					self.gripper_send_position_goal(action='pick')
 					# Send commands to the publish_objects_path node to move the objects in gazebo
 					# It attaches the object to the gripper
@@ -421,7 +421,7 @@ class ur5_grasp_project(object):
 						raw_input('=== Pres enter to proceed')
 						self.traj_planner(garbage_location, movement='fast')
 
-					print("Placing object...")					
+					print("> Placing object...")					
 					# After the bin location is reached, the robot will place the object and move back
 					# to the initial position
 					self.gripper_send_position_goal(0.3)

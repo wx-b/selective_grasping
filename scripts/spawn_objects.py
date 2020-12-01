@@ -87,43 +87,44 @@ if __name__ == '__main__':
 	###############
 	# Spawn boxes #
 	###############
+	y = -0.1
 
 	object_path = '/models/boxes/b0/model.sdf'
-	ptFinal = [0.33, -0.70, -0.005]
+	ptFinal = [0.33 + y, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b0', object_path, ptFinal, oriFinal)
 
 	object_path = '/models/boxes/b1/model.sdf'
-	ptFinal = [0.25, -0.70, -0.005]
+	ptFinal = [0.25 + y, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b1', object_path, ptFinal, oriFinal)
 
 	object_path = '/models/boxes/b2/model.sdf'
-	ptFinal = [0.17, -0.70, -0.005]
+	ptFinal = [0.17 + y, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b2', object_path, ptFinal, oriFinal)
 
 	object_path = '/models/boxes/b3/model.sdf'
-	ptFinal = [0.09, -0.70, -0.005]
+	ptFinal = [0.09 + y, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b3', object_path, ptFinal, oriFinal)
 
 	object_path = '/models/boxes/b4/model.sdf'
-	ptFinal = [0.01, -0.70, -0.005]
+	ptFinal = [0.01 + y, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b4', object_path, ptFinal, oriFinal)
 
 	object_path = '/models/boxes/b5/model.sdf'
-	ptFinal = [-0.07, -0.70, -0.005]
+	ptFinal = [-0.07 + y, -0.70, -0.005]
 	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
 	spawn_obj.spawning('b5', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/boxes/b6/model.sdf'
-	ptFinal = [-0.15, -0.70, -0.005]
-	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
-	spawn_obj.spawning('b6', object_path, ptFinal, oriFinal)
+	# object_path = '/models/boxes/b6/model.sdf'
+	# ptFinal = [-0.15, -0.70, -0.005]
+	# oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
+	# spawn_obj.spawning('b6', object_path, ptFinal, oriFinal)
 
-	object_path = '/models/boxes/b7/model.sdf'
-	ptFinal = [-0.23, -0.70, -0.005]
-	oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
-	spawn_obj.spawning('b7', object_path, ptFinal, oriFinal)
+	# object_path = '/models/boxes/b7/model.sdf'
+	# ptFinal = [-0.23, -0.70, -0.005]
+	# oriFinal = quaternion_from_euler(0.0, 0.0, 1.57)
+	# spawn_obj.spawning('b7', object_path, ptFinal, oriFinal)
